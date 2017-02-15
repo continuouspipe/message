@@ -1,0 +1,8 @@
+{
+    "name": "continuous-pipe/message",
+    "autoload": {
+        "psr-4": { "": "src/" }
+    },
+    "require": {
+    }
+}
