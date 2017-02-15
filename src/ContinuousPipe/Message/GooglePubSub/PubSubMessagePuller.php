@@ -56,7 +56,7 @@ class PubSubMessagePuller implements MessagePuller
         $subscription = $this->getSubscription();
 
         try {
-            foreach ($subscription->pull(['returnImmediately' => false]) as $googleCloudMessage) {
+            foreach ($subscription->pull(['returnImmediately' => false, 'maxMessages' => 1,]) as $googleCloudMessage) {
                 /** @var \Google\Cloud\PubSub\Message $googleCloudMessage */
 
                 try {
