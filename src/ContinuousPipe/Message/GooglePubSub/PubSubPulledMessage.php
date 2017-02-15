@@ -43,4 +43,9 @@ class PubSubPulledMessage implements PulledMessage
     {
         return $this->pubSubMessage->id();
     }
+
+    public function getAcknowledgeIdentifier() : string
+    {
+        return $this->pubSubMessage->ackId();
+    }
 }

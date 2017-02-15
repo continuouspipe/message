@@ -6,6 +6,8 @@ use ContinuousPipe\Message\Message;
 use ContinuousPipe\Message\MessageException;
 use ContinuousPipe\Message\MessagePuller;
 use Google\Cloud\Exception\GoogleException;
+use Google\Cloud\PubSub\Connection\ConnectionInterface;
+use Google\Cloud\PubSub\Subscription;
 use Google\Cloud\ServiceBuilder;
 use JMS\Serializer\Exception\Exception as SerializerException;
 use JMS\Serializer\SerializerInterface;
@@ -51,8 +53,7 @@ class PubSubMessagePuller implements MessagePuller
 
     public function pull(): \Generator
     {
-        $pubSub = $this->serviceBuilder->pubsub();
-        $subscription = $pubSub->subscription($this->subscriptionName);
+        $subscription = $this->getSubscription();
 
         try {
             foreach ($subscription->pull(['returnImmediately' => false]) as $googleCloudMessage) {
@@ -67,11 +68,39 @@ class PubSubMessagePuller implements MessagePuller
 
                     yield new PubSubPulledMessage($subscription, $googleCloudMessage, $message);
                 } catch (SerializerException $e) {
-                    throw new MessageException('Unable to unserialize message', $e->getCode(), $e);
+                    $this->logger->error('Unable to unserialize message', [
+                        'message' => $googleCloudMessage->id(),
+                        'exception' => $e,
+                    ]);
+
+                    $subscription->acknowledge($googleCloudMessage);
                 }
             }
         } catch (GoogleException $e) {
             throw new MessageException('Unable to pull messages', $e->getCode(), $e);
         }
+    }
+
+    public function extendDeadline(string $messageIdentifier, int $seconds)
+    {
+        $subscription = $this->getSubscription();
+        $connectionGetter = \Closure::bind(function (Subscription $subscription) {
+            return $subscription->connection;
+        }, null, $subscription);
+
+        /** @var ConnectionInterface $connection */
+        $connection = $connectionGetter($subscription);
+        $connection->modifyAckDeadline([
+            'subscription' => $this->subscriptionName,
+            'ackIds' => [$messageIdentifier],
+            'ackDeadlineSeconds' => $seconds
+        ]);
+    }
+
+    private function getSubscription(): Subscription
+    {
+        $pubSub = $this->serviceBuilder->pubsub();
+
+        return $pubSub->subscription($this->subscriptionName);
     }
 }

@@ -9,4 +9,6 @@ interface PulledMessage
     public function acknowledge();
 
     public function getIdentifier() : string;
+
+    public function getAcknowledgeIdentifier() : string;
 }
