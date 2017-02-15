@@ -20,5 +20,8 @@
             <argument>%google_pub_sub_topic%</argument>
             <argument>%google_pub_sub_subscription_name%</argument>
         </service>
+
+        <service id="continuouspipe.message.message_producer" alias="continuouspipe.message.google_pub_sub.message_producer" />
+        <service id="continuouspipe.message.message_poller" alias="continuouspipe.message.google_pub_sub.message_poller" />
     </services>
 </container>

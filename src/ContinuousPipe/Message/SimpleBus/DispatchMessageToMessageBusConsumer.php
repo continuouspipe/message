@@ -6,7 +6,7 @@ use ContinuousPipe\Message\Message;
 use ContinuousPipe\Message\MessageConsumer;
 use SimpleBus\Message\Bus\MessageBus;
 
-class DispatchMessagesToEventBusConsumer implements MessageConsumer
+class DispatchMessageToMessageBusConsumer implements MessageConsumer
 {
     /**
      * @var MessageBus

@@ -7,26 +7,26 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class PullAndDispatchMessageCommand extends ContainerAwareCommand
+class PullAndConsumeMessageCommand extends ContainerAwareCommand
 {
     public function configure()
     {
-        $this->setName('continuouspipe:message:pull-and-dispatch');
+        $this->setName('continuouspipe:message:pull-and-consume');
     }
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $messages = $this->getContainer()->get('continuouspipe.message.google_pub_sub.message_poller')->pull();
-        $eventBus = $this->getContainer()->get('simple_bus.asynchronous.command_bus');
+        $puller = $this->getContainer()->get('continuouspipe.message.message_poller');
+        $consumer = $this->getContainer()->get('continuouspipe.message.message_consumer');
 
         $output->writeln('Waiting for messages...');
 
-        foreach ($messages as $pulledMessage) {
+        foreach ($puller->pull() as $pulledMessage) {
             /** @var PulledMessage $pulledMessage */
             $message = $pulledMessage->getMessage();
 
             $output->writeln(sprintf('Consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-            $eventBus->handle($message);
+            $consumer->consume($message);
 
             $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
             $pulledMessage->acknowledge();
