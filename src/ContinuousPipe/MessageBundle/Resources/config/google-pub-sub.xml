@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="continuouspipe.message.google_pub_sub.message_producer" class="ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer">
+            <argument type="service" id="jms_serializer" />
+            <argument>%google_pub_sub_project_id%</argument>
+            <argument>%google_pub_sub_key_file_path%</argument>
+            <argument>%google_pub_sub_topic%</argument>
+        </service>
+
+        <service id="continuouspipe.message.google_pub_sub.message_poller" class="ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller">
+            <argument type="service" id="jms_serializer" />
+            <argument type="service" id="logger" />
+            <argument>%google_pub_sub_project_id%</argument>
+            <argument>%google_pub_sub_key_file_path%</argument>
+            <argument>%google_pub_sub_topic%</argument>
+            <argument>%google_pub_sub_subscription_name%</argument>
+        </service>
+    </services>
+</container>

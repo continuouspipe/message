@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="continuouspipe.message.simple_bus.producer" class="ContinuousPipe\Message\SimpleBus\Producer\SimpleBusPublisherToMessagePublisher">
+            <argument type="service" id="continuouspipe.message.google_pub_sub.message_producer" />
+        </service>
+    </services>
+</container>
