@@ -8,5 +8,10 @@ namespace ContinuousPipe\Message;
  */
 interface MessagePuller
 {
+    /**
+     * The generator will return `PulledMessage` instances.
+     *
+     * @return \Generator
+     */
     public function pull() : \Generator;
 }

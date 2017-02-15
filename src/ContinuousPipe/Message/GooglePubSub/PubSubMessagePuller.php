@@ -52,10 +52,10 @@ class PubSubMessagePuller implements MessagePuller
     public function pull(): \Generator
     {
         $pubSub = $this->serviceBuilder->pubsub();
-        $subscription = $pubSub->subscription($this->subscriptionName, $this->topicName);
+        $subscription = $pubSub->subscription($this->subscriptionName);
 
         try {
-            foreach ($subscription->pull() as $googleCloudMessage) {
+            foreach ($subscription->pull(['returnImmediately' => false]) as $googleCloudMessage) {
                 /** @var \Google\Cloud\PubSub\Message $googleCloudMessage */
 
                 try {
@@ -65,14 +65,10 @@ class PubSubMessagePuller implements MessagePuller
                         'json'
                     );
 
-                    yield $message;
+                    yield new PubSubPulledMessage($subscription, $googleCloudMessage, $message);
                 } catch (SerializerException $e) {
                     throw new MessageException('Unable to unserialize message', $e->getCode(), $e);
                 }
-
-                yield $message;
-
-                $subscription->acknowledge($googleCloudMessage);
             }
         } catch (GoogleException $e) {
             throw new MessageException('Unable to pull messages', $e->getCode(), $e);
