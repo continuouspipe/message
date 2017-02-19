@@ -17,6 +17,14 @@ use Tolerance\Operation\ExceptionCatcher\ThrowableCatcherVoter;
 
 class PullAndConsumeMessageCommand extends ContainerAwareCommand
 {
+    /**
+     * Maximum runtime, in seconds. 30 minutes, in order to prevent any database-timeout related issue.
+     */
+    const MAX_RUNTIME_IN_SECS = 1800;
+
+    /**
+     * @var bool
+     */
     private $shouldStop = false;
 
     /**
@@ -61,6 +69,7 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
         pcntl_signal(SIGINT, [$this, 'stopCommand']);
 
         $output->writeln('Waiting for messages...');
+        $startTime = time();
 
         while (!$this->shouldStop) {
             foreach ($this->messagePuller->pull() as $pulledMessage) {
@@ -91,7 +100,15 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
                 }
 
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+
+                // If an exception happened, break the loop to ensure to go back to the `shouldStop` condition
+                if (isset($e)) {
+                    break;
+                }
             }
+
+            $ranMoreThanRunTime = (time() - $startTime) > self::MAX_RUNTIME_IN_SECS;
+            $this->shouldStop = $this->shouldStop || $ranMoreThanRunTime;
         }
 
         $output->writeln('The worker has stopped (should have stopped: '.($this->shouldStop ? 'yes' : 'no').')');
