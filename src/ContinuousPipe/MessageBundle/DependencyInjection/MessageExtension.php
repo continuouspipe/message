@@ -19,6 +19,7 @@ class MessageExtension extends Extension
 
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('simple-bus.xml');
+        $loader->load('command.xml');
         $loader->load('drivers/'.$config['driver'].'.xml');
     }
 }

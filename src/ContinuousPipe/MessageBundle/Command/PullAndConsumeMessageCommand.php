@@ -2,37 +2,77 @@
 
 namespace ContinuousPipe\MessageBundle\Command;
 
+use ContinuousPipe\Message\MessageConsumer;
+use ContinuousPipe\Message\MessagePuller;
 use ContinuousPipe\Message\PulledMessage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Tolerance\Operation\ExceptionCatcher\ThrowableCatcherVoter;
 
 class PullAndConsumeMessageCommand extends ContainerAwareCommand
 {
+    /**
+     * Maximum runtime, in seconds. 30 minutes, in order to prevent any database-timeout related issue.
+     */
+    const MAX_RUNTIME_IN_SECS = 1800;
+
+    /**
+     * @var bool
+     */
     private $shouldStop = false;
 
-    public function configure()
-    {
-        $this->setName('continuouspipe:message:pull-and-consume');
+    /**
+     * @var MessagePuller
+     */
+    private $messagePuller;
+
+    /**
+     * @var MessageConsumer
+     */
+    private $messageConsumer;
+
+    /**
+     * @var ThrowableCatcherVoter
+     */
+    private $throwableCatcherVoter;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    public function __construct(
+        MessagePuller $messagePuller,
+        MessageConsumer $messageConsumer,
+        ThrowableCatcherVoter $throwableCatcherVoter,
+        LoggerInterface $logger
+    ) {
+        parent::__construct('continuouspipe:message:pull-and-consume');
+
+        $this->messagePuller = $messagePuller;
+        $this->messageConsumer = $messageConsumer;
+        $this->throwableCatcherVoter = $throwableCatcherVoter;
+        $this->logger = $logger;
     }
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $puller = $this->getContainer()->get('continuouspipe.message.message_poller');
-        $consumer = $this->getContainer()->get('continuouspipe.message.message_consumer');
         $consolePath = $this->getContainer()->getParameter('kernel.root_dir').DIRECTORY_SEPARATOR.'console';
 
         pcntl_signal(SIGTERM, [$this, 'stopCommand']);
         pcntl_signal(SIGINT, [$this, 'stopCommand']);
 
         $output->writeln('Waiting for messages...');
+        $startTime = time();
 
         while (!$this->shouldStop) {
-            foreach ($puller->pull() as $pulledMessage) {
+            foreach ($this->messagePuller->pull() as $pulledMessage) {
                 /** @var PulledMessage $pulledMessage */
                 $message = $pulledMessage->getMessage();
 
@@ -41,13 +81,34 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
                 $extenderProcess = new Process($consolePath . ' continuouspipe:message:extend-deadline ' . $pulledMessage->getAcknowledgeIdentifier());
                 $extenderProcess->start();
 
-                $consumer->consume($message);
+                try {
+                    $this->messageConsumer->consume($message);
+                } catch (\Throwable $e) {
+                    // The throwable will be handled later...
+                    $this->logger->warning('An exception occurred while processing the message', [
+                        'exception' => $e,
+                    ]);
+                } finally {
+                    $extenderProcess->stop(0);
+                }
 
-                $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-                $pulledMessage->acknowledge();
-                $extenderProcess->stop(0);
+                if (isset($e) && $this->throwableCatcherVoter->shouldCatchThrowable($e)) {
+                    $output->writeln(sprintf('Message "%s" (%s) has not been acknowledge as the exception has been cought', get_class($message), $pulledMessage->getIdentifier()));
+                } else {
+                    $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+                    $pulledMessage->acknowledge();
+                }
+
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+
+                // If an exception happened, break the loop to ensure to go back to the `shouldStop` condition
+                if (isset($e)) {
+                    break;
+                }
             }
+
+            $ranMoreThanRunTime = (time() - $startTime) > self::MAX_RUNTIME_IN_SECS;
+            $this->shouldStop = $this->shouldStop || $ranMoreThanRunTime;
         }
 
         $output->writeln('The worker has stopped (should have stopped: '.($this->shouldStop ? 'yes' : 'no').')');
