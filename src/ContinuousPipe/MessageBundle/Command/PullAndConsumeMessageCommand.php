@@ -2,6 +2,8 @@
 
 namespace ContinuousPipe\MessageBundle\Command;
 
+use ContinuousPipe\Message\MessageConsumer;
+use ContinuousPipe\Message\MessagePuller;
 use ContinuousPipe\Message\PulledMessage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -15,15 +17,26 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
 {
     private $shouldStop = false;
 
-    public function configure()
+    /**
+     * @var MessagePuller
+     */
+    private $messagePuller;
+
+    /**
+     * @var MessageConsumer
+     */
+    private $messageConsumer;
+
+    public function __construct(MessagePuller $messagePuller, MessageConsumer $messageConsumer)
     {
-        $this->setName('continuouspipe:message:pull-and-consume');
+        parent::__construct('continuouspipe:message:pull-and-consume');
+
+        $this->messagePuller = $messagePuller;
+        $this->messageConsumer = $messageConsumer;
     }
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $puller = $this->getContainer()->get('continuouspipe.message.message_poller');
-        $consumer = $this->getContainer()->get('continuouspipe.message.message_consumer');
         $consolePath = $this->getContainer()->getParameter('kernel.root_dir').DIRECTORY_SEPARATOR.'console';
 
         pcntl_signal(SIGTERM, [$this, 'stopCommand']);
@@ -32,7 +45,7 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
         $output->writeln('Waiting for messages...');
 
         while (!$this->shouldStop) {
-            foreach ($puller->pull() as $pulledMessage) {
+            foreach ($this->messagePuller->pull() as $pulledMessage) {
                 /** @var PulledMessage $pulledMessage */
                 $message = $pulledMessage->getMessage();
 
@@ -41,11 +54,11 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
                 $extenderProcess = new Process($consolePath . ' continuouspipe:message:extend-deadline ' . $pulledMessage->getAcknowledgeIdentifier());
                 $extenderProcess->start();
 
-                $consumer->consume($message);
+                $this->messageConsumer->consume($message);
 
+                $extenderProcess->stop(0);
                 $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
                 $pulledMessage->acknowledge();
-                $extenderProcess->stop(0);
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
             }
         }

@@ -3,6 +3,7 @@
 namespace ContinuousPipe\Message\GooglePubSub;
 
 use ContinuousPipe\Message\Message;
+use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessageException;
 use ContinuousPipe\Message\MessagePuller;
 use Google\Cloud\Exception\GoogleException;
@@ -13,7 +14,7 @@ use JMS\Serializer\Exception\Exception as SerializerException;
 use JMS\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
 
-class PubSubMessagePuller implements MessagePuller
+class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationManager
 {
     /**
      * @var ServiceBuilder
