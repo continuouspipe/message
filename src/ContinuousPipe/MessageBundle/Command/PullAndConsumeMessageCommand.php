@@ -7,11 +7,13 @@ use ContinuousPipe\Message\MessagePuller;
 use ContinuousPipe\Message\PulledMessage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Tolerance\Operation\ExceptionCatcher\ThrowableCatcherVoter;
 
 class PullAndConsumeMessageCommand extends ContainerAwareCommand
 {
@@ -27,12 +29,28 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
      */
     private $messageConsumer;
 
-    public function __construct(MessagePuller $messagePuller, MessageConsumer $messageConsumer)
-    {
+    /**
+     * @var ThrowableCatcherVoter
+     */
+    private $throwableCatcherVoter;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    public function __construct(
+        MessagePuller $messagePuller,
+        MessageConsumer $messageConsumer,
+        ThrowableCatcherVoter $throwableCatcherVoter,
+        LoggerInterface $logger
+    ) {
         parent::__construct('continuouspipe:message:pull-and-consume');
 
         $this->messagePuller = $messagePuller;
         $this->messageConsumer = $messageConsumer;
+        $this->throwableCatcherVoter = $throwableCatcherVoter;
+        $this->logger = $logger;
     }
 
     public function run(InputInterface $input, OutputInterface $output)
@@ -54,11 +72,24 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
                 $extenderProcess = new Process($consolePath . ' continuouspipe:message:extend-deadline ' . $pulledMessage->getAcknowledgeIdentifier());
                 $extenderProcess->start();
 
-                $this->messageConsumer->consume($message);
+                try {
+                    $this->messageConsumer->consume($message);
+                } catch (\Throwable $e) {
+                    // The throwable will be handled later...
+                    $this->logger->warning('An exception occurred while processing the message', [
+                        'exception' => $e,
+                    ]);
+                } finally {
+                    $extenderProcess->stop(0);
+                }
 
-                $extenderProcess->stop(0);
-                $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-                $pulledMessage->acknowledge();
+                if (isset($e) && $this->throwableCatcherVoter->shouldCatchThrowable($e)) {
+                    $output->writeln(sprintf('Message "%s" (%s) has not been acknowledge as the exception has been cought', get_class($message), $pulledMessage->getIdentifier()));
+                } else {
+                    $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+                    $pulledMessage->acknowledge();
+                }
+
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
             }
         }
