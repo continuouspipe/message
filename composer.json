@@ -4,5 +4,6 @@
         "psr-4": { "": "src/" }
     },
     "require": {
+        "google/cloud": "^0.20.2"
     }
 }
