@@ -8,16 +8,10 @@
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" class="ContinuousPipe\Message\AutoRetry\CatchDoctrineDriverException" />
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" alias="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" />
         <service id="continuouspipe.message.command.pull_and_consumer" class="ContinuousPipe\MessageBundle\Command\PullAndConsumeMessageCommand">
-            <argument type="service" id="continuouspipe.message.message_poller" />
+            <argument type="service" id="continuouspipe.message.message_puller" />
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" />
             <argument type="service" id="logger" />
-
-            <tag name="console.command" />
-        </service>
-
-        <service id="continuouspipe.message.command.extend_message_deadline" class="ContinuousPipe\MessageBundle\Command\ExtendMessageDeadlineCommand">
-            <argument type="service" id="continuouspipe.message.google_pub_sub.message_poller"/>
 
             <tag name="console.command" />
         </service>

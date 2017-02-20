@@ -9,6 +9,7 @@
             <argument type="service" id="continuouspipe.message.message_consumer" />
         </service>
 
+        <service id="continuouspipe.message.message_puller" class="ContinuousPipe\Message\InMemory\ArrayMessagePuller" />
         <service id="continuouspipe.message.message_producer" alias="continuouspipe.message.direct.message_producer" />
     </services>
 </container>

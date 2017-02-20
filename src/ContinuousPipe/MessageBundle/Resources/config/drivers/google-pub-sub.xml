@@ -12,7 +12,7 @@
             <argument>%google_pub_sub_topic%</argument>
         </service>
 
-        <service id="continuouspipe.message.google_pub_sub.message_poller" class="ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller">
+        <service id="continuouspipe.message.google_pub_sub.message_puller" class="ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller">
             <argument type="service" id="jms_serializer" />
             <argument type="service" id="logger" />
             <argument>%google_pub_sub_project_id%</argument>
@@ -22,6 +22,12 @@
         </service>
 
         <service id="continuouspipe.message.message_producer" alias="continuouspipe.message.google_pub_sub.message_producer" />
-        <service id="continuouspipe.message.message_poller" alias="continuouspipe.message.google_pub_sub.message_poller" />
+        <service id="continuouspipe.message.message_puller" alias="continuouspipe.message.google_pub_sub.message_puller" />
+
+        <service id="continuouspipe.message.command.extend_message_deadline" class="ContinuousPipe\MessageBundle\Command\ExtendMessageDeadlineCommand">
+            <argument type="service" id="continuouspipe.message.google_pub_sub.message_puller"/>
+
+            <tag name="console.command" />
+        </service>
     </services>
 </container>
