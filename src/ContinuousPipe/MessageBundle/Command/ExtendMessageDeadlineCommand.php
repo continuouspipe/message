@@ -45,7 +45,7 @@ class ExtendMessageDeadlineCommand extends ContainerAwareCommand
 
         while (!$this->shouldStop) {
             $output->write(sprintf('Extending the deadline of message "%s" by %d seconds', $messageIdentifier, $expirationExtension));
-            $this->messageDeadlineExpirationManager->extendDeadline($messageIdentifier, $expirationExtension);
+            $this->messageDeadlineExpirationManager->modifyDeadline($messageIdentifier, $expirationExtension);
 
             sleep($expirationExtension - 5);
         }

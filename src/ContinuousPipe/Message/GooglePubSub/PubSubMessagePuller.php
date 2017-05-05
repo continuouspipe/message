@@ -82,7 +82,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
         }
     }
 
-    public function extendDeadline(string $messageIdentifier, int $seconds)
+    public function modifyDeadline(string $messageIdentifier, int $seconds)
     {
         $subscription = $this->getSubscription();
         $connectionGetter = \Closure::bind(function (Subscription $subscription) {

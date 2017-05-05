@@ -19,7 +19,7 @@ class Configuration implements ConfigurationInterface
             ->children()
                 ->enumNode('driver')
                     ->isRequired()
-                    ->values(['google-pub-sub', 'direct'])
+                    ->values(['google-pub-sub', 'direct', 'none'])
                 ->end()
             ->end()
         ;
