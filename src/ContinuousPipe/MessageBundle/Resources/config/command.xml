@@ -41,7 +41,7 @@
             <argument /> <!-- Message puller -->
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" />
-            <argument /> <!-- Transaction Manager factory -->
+            <argument type="service" id="continuouspipe.message.command.transaction_manager_factory.default" />
             <argument type="service" id="logger" />
 
             <tag name="console.command" />
