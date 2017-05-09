@@ -89,6 +89,10 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
             return $subscription->connection;
         }, null, $subscription);
 
+        if ($seconds > 600) {
+            $seconds = 600;
+        }
+
         /** @var ConnectionInterface $connection */
         $connection = $connectionGetter($subscription);
         $connection->modifyAckDeadline([
