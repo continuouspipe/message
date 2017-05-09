@@ -83,6 +83,7 @@ class MessageExtension extends Extension
                 $producerName,
                 new Definition(FromProducerToConsumer::class, [
                     new Reference('continuouspipe.message.message_consumer'),
+                    new Reference('jms_serializer'),
                 ])
             );
 
