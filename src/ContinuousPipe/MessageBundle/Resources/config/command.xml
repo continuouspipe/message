@@ -5,12 +5,43 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="continuouspipe.message.time_resolver" class="ContinuousPipe\TimeResolver\NativeTimeResolver" />
+
+        <!-- Transaction managers -->
+        <service id="continuouspipe.message.command.transaction_manager.default" class="ContinuousPipe\Message\Transaction\RunCallableTransactionManager" />
+        <service id="continuouspipe.message.command.transaction_manager.acknowledge_messages"
+                 class="ContinuousPipe\Message\Transaction\AcknowledgeMessageOnceProcessed"
+                 decorates="continuouspipe.message.command.transaction_manager.default">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.acknowledge_messages.inner" />
+            <argument type="service" id="logger" />
+            <argument type="service" id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" />
+        </service>
+        <service id="continuouspipe.message.command.transaction_manager.extend_dealine_during_transaction"
+                 class="ContinuousPipe\Message\Transaction\ExtendDeadlineDuringTransaction"
+                 decorates="continuouspipe.message.command.transaction_manager.default">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.extend_dealine_during_transaction.inner" />
+            <argument>%kernel.root_dir%/console</argument>
+        </service>
+        <service id="continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages"
+                 class="ContinuousPipe\Message\Delay\ModifyDeadlineForDelayedMessages"
+                 decorates="continuouspipe.message.command.transaction_manager.default">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages.inner" />
+            <argument /> <!-- Message Deadline Expiration Manager -->
+            <argument type="service" id="continuouspipe.message.time_resolver"/>
+        </service>
+
+        <service id="continuouspipe.message.command.transaction_manager_factory.default" class="ContinuousPipe\Message\Transaction\DefaultTransactionManagerFactory">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.default"/>
+        </service>
+
+        <!-- Command -->
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" class="ContinuousPipe\Message\AutoRetry\CatchDoctrineDriverException" />
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" alias="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" />
         <service id="continuouspipe.message.command.pull_and_consumer" class="ContinuousPipe\MessageBundle\Command\PullAndConsumeMessageCommand">
-            <argument type="service" id="continuouspipe.message.message_puller" />
+            <argument /> <!-- Message puller -->
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" />
+            <argument /> <!-- Transaction Manager factory -->
             <argument type="service" id="logger" />
 
             <tag name="console.command" />

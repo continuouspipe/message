@@ -2,7 +2,9 @@
 
 namespace ContinuousPipe\Message\Delay;
 
-interface DelayedMessage
+use ContinuousPipe\Message\Message;
+
+interface DelayedMessage extends Message
 {
     /**
      * Date/time at which the message have to be run.

@@ -26,6 +26,6 @@ class FromProducerToConsumer implements MessageProducer
      */
     public function produce(Message $message)
     {
-        return $this->messageConsumer->consume($message);
+        $this->messageConsumer->consume($message);
     }
 }

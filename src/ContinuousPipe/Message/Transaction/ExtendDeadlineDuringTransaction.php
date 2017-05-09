@@ -30,13 +30,17 @@ final class ExtendDeadlineDuringTransaction implements TransactionManager
 
     public function run(PulledMessage $message, callable $callable)
     {
-        $extenderProcess = new Process($this->consolePath . ' continuouspipe:message:extend-deadline ' . $message->getAcknowledgeIdentifier());
-        $extenderProcess->start();
+        if ($message instanceof LongRunningMessage) {
+            $extenderProcess = new Process($this->consolePath . ' continuouspipe:message:extend-deadline ' . $message->getAcknowledgeIdentifier());
+            $extenderProcess->start();
+        }
 
         try {
             return $this->transactionManager->run($message, $callable);
         } finally {
-            $extenderProcess->stop(0);
+            if (isset($extenderProcess)) {
+                $extenderProcess->stop(0);
+            }
         }
     }
 }
