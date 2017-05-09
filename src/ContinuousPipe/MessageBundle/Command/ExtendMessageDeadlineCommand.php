@@ -31,7 +31,7 @@ class ExtendMessageDeadlineCommand extends ContainerAwareCommand
     public function configure()
     {
         $this
-            ->addArgument('message-id', InputArgument::REQUIRED)
+            ->addArgument('acknowledge-id', InputArgument::REQUIRED)
         ;
     }
 
@@ -40,12 +40,12 @@ class ExtendMessageDeadlineCommand extends ContainerAwareCommand
         pcntl_signal(SIGTERM, [$this, 'stopCommand']);
         pcntl_signal(SIGINT, [$this, 'stopCommand']);
 
-        $messageIdentifier = $input->getArgument('message-id');
+        $acknowledgeIdentifier = $input->getArgument('acknowledge-id');
         $expirationExtension = 60;
 
         while (!$this->shouldStop) {
-            $output->write(sprintf('Extending the deadline of message "%s" by %d seconds', $messageIdentifier, $expirationExtension));
-            $this->messageDeadlineExpirationManager->modifyDeadline($messageIdentifier, $expirationExtension);
+            $output->write(sprintf('Extending the deadline of message "%s" by %d seconds', $acknowledgeIdentifier, $expirationExtension));
+            $this->messageDeadlineExpirationManager->modifyDeadline($acknowledgeIdentifier, $expirationExtension);
 
             sleep($expirationExtension - 5);
         }

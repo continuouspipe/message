@@ -4,5 +4,5 @@ namespace ContinuousPipe\Message;
 
 interface MessageDeadlineExpirationManager
 {
-    public function modifyDeadline(string $messageIdentifier, int $seconds);
+    public function modifyDeadline(string $acknowledgeIdentifier, int $seconds);
 }

@@ -41,7 +41,7 @@ class ModifyDeadlineForDelayedMessages implements TransactionManager
 
             if ($shouldRunInSeconds > 0) {
                 $this->deadlineExpirationManager->modifyDeadline(
-                    $message->getIdentifier(),
+                    $message->getAcknowledgeIdentifier(),
                     $shouldRunInSeconds
                 );
 
