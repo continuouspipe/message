@@ -7,7 +7,20 @@ services.
 
 ```yaml
 message:
-    driver: google-pub-sub
+    simple_bus:
+        connection: default
+    command:
+        connection: default
+        message_dealine_expiration_manager: continuouspipe.message.default.message_puller
+    connections:
+        default:
+            driver:
+                google_pub_sub:
+                    project_id: %google_pub_sub_project_id%
+                    service_account_path: %google_pub_sub_key_file_path%
+                    topic: %google_pub_sub_topic%
+                    subscription: %google_pub_sub_subscription_name%
+            debug: false
 ```
 
 With asychronous simple bus:
