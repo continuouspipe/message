@@ -55,7 +55,7 @@ class Configuration implements ConfigurationInterface
                 ->arrayNode('command')
                     ->children()
                         ->scalarNode('connection')->isRequired()->end()
-                        ->scalarNode('message_dealine_expiration_manager')->end()
+                        ->scalarNode('message_deadline_expiration_manager')->end()
                     ->end()
                 ->end()
             ->end()
