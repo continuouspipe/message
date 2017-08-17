@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="continuouspipe.message.command.transaction_manager.tideways"
+                 class="ContinuousPipe\Message\Transaction\Tracing\TidewaysTransactionManager"
+                 decorates="continuouspipe.message.command.transaction_manager.default">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.tideways.inner" />
+            <argument type="service" id="logger" />
+            <argument>%continuous_pipe.message.tideways_api_key%</argument>
+        </service>
+    </services>
+</container>

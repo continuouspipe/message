@@ -58,6 +58,12 @@ class Configuration implements ConfigurationInterface
                         ->scalarNode('message_deadline_expiration_manager')->end()
                     ->end()
                 ->end()
+                ->arrayNode('tideways')
+                    ->canBeEnabled()
+                    ->children()
+                        ->scalarNode('api_key')->isRequired()->end()
+                    ->end()
+                ->end()
             ->end()
         ;
 

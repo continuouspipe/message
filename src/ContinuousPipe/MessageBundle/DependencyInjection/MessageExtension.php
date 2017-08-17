@@ -64,6 +64,12 @@ class MessageExtension extends Extension
                 $loader->load($filePath);
             }
         }
+
+        if ($config['tideways']['enabled']) {
+            $container->setParameter('continuous_pipe.message.tideways_api_key', $config['tideways']['api_key']);
+
+            $loader->load('integrations/tideways.xml');
+        }
     }
 
     private function createConnection(ContainerBuilder $container, string $name, array $configuration)

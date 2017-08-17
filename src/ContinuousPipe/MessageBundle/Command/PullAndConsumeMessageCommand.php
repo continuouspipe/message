@@ -72,8 +72,6 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $consolePath = $this->getContainer()->getParameter('kernel.root_dir').DIRECTORY_SEPARATOR.'console';
-
         pcntl_signal(SIGTERM, [$this, 'stopCommand']);
         pcntl_signal(SIGINT, [$this, 'stopCommand']);
 
