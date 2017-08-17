@@ -5,6 +5,8 @@ namespace ContinuousPipe\MessageBundle\Command;
 use ContinuousPipe\Message\MessageConsumer;
 use ContinuousPipe\Message\MessagePuller;
 use ContinuousPipe\Message\PulledMessage;
+use ContinuousPipe\Message\Transaction\TransactionManager;
+use ContinuousPipe\Message\Transaction\TransactionManagerFactory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Psr\Log\LoggerInterface;
@@ -43,6 +45,11 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
     private $throwableCatcherVoter;
 
     /**
+     * @var TransactionManagerFactory
+     */
+    private $transactionManagerFactory;
+
+    /**
      * @var LoggerInterface
      */
     private $logger;
@@ -51,6 +58,7 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
         MessagePuller $messagePuller,
         MessageConsumer $messageConsumer,
         ThrowableCatcherVoter $throwableCatcherVoter,
+        TransactionManagerFactory $transactionManagerFactory,
         LoggerInterface $logger
     ) {
         parent::__construct('continuouspipe:message:pull-and-consume');
@@ -58,6 +66,7 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
         $this->messagePuller = $messagePuller;
         $this->messageConsumer = $messageConsumer;
         $this->throwableCatcherVoter = $throwableCatcherVoter;
+        $this->transactionManagerFactory = $transactionManagerFactory;
         $this->logger = $logger;
     }
 
@@ -72,40 +81,7 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
         $startTime = time();
 
         while (!$this->shouldStop) {
-            foreach ($this->messagePuller->pull() as $pulledMessage) {
-                /** @var PulledMessage $pulledMessage */
-                $message = $pulledMessage->getMessage();
-
-                $output->writeln(sprintf('Consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-
-                $extenderProcess = new Process($consolePath . ' continuouspipe:message:extend-deadline ' . $pulledMessage->getAcknowledgeIdentifier());
-                $extenderProcess->start();
-
-                try {
-                    $this->messageConsumer->consume($message);
-                } catch (\Throwable $e) {
-                    // The throwable will be handled later...
-                    $this->logger->warning('An exception occurred while processing the message', [
-                        'exception' => $e,
-                    ]);
-                } finally {
-                    $extenderProcess->stop(0);
-                }
-
-                if (isset($e) && $this->throwableCatcherVoter->shouldCatchThrowable($e)) {
-                    $output->writeln(sprintf('Message "%s" (%s) has not been acknowledge as the exception has been cought', get_class($message), $pulledMessage->getIdentifier()));
-                } else {
-                    $output->writeln(sprintf('Acknowledging message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-                    $pulledMessage->acknowledge();
-                }
-
-                $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-
-                // If an exception happened, break the loop to ensure to go back to the `shouldStop` condition
-                if (isset($e)) {
-                    break;
-                }
-            }
+            $this->pullMessages($output);
 
             $ranMoreThanRunTime = (time() - $startTime) > self::MAX_RUNTIME_IN_SECS;
             $this->shouldStop = $this->shouldStop || $ranMoreThanRunTime;
@@ -117,5 +93,18 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
     public function stopCommand()
     {
         $this->shouldStop = true;
+    }
+
+    private function pullMessages(OutputInterface $output)
+    {
+        foreach ($this->messagePuller->pull() as $pulledMessage) {
+            $this->transactionManagerFactory->forMessage($pulledMessage)->run($pulledMessage, function (PulledMessage $pulledMessage) use ($output) {
+                $message = $pulledMessage->getMessage();
+
+                $output->writeln(sprintf('Consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+                $this->messageConsumer->consume($message);
+                $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
+            });
+        }
     }
 }

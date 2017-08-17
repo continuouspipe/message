@@ -5,25 +5,6 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="continuouspipe.message.google_pub_sub.message_producer" class="ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer">
-            <argument type="service" id="jms_serializer" />
-            <argument>%google_pub_sub_project_id%</argument>
-            <argument>%google_pub_sub_key_file_path%</argument>
-            <argument>%google_pub_sub_topic%</argument>
-        </service>
-
-        <service id="continuouspipe.message.google_pub_sub.message_puller" class="ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller">
-            <argument type="service" id="jms_serializer" />
-            <argument type="service" id="logger" />
-            <argument>%google_pub_sub_project_id%</argument>
-            <argument>%google_pub_sub_key_file_path%</argument>
-            <argument>%google_pub_sub_topic%</argument>
-            <argument>%google_pub_sub_subscription_name%</argument>
-        </service>
-
-        <service id="continuouspipe.message.message_producer" alias="continuouspipe.message.google_pub_sub.message_producer" />
-        <service id="continuouspipe.message.message_puller" alias="continuouspipe.message.google_pub_sub.message_puller" />
-
         <service id="continuouspipe.message.command.extend_message_deadline" class="ContinuousPipe\MessageBundle\Command\ExtendMessageDeadlineCommand">
             <argument type="service" id="continuouspipe.message.google_pub_sub.message_puller"/>
 

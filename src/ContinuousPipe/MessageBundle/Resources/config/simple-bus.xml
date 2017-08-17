@@ -6,7 +6,7 @@
 
     <services>
         <service id="continuouspipe.message.simple_bus.producer" class="ContinuousPipe\Message\SimpleBus\Producer\SimpleBusPublisherToMessagePublisher">
-            <argument type="service" id="continuouspipe.message.message_producer" />
+            <argument /> <!-- Message producer -->
         </service>
         <service id="continuouspipe.message.simple_bus.dispatch_to_bus_consumer" class="ContinuousPipe\Message\SimpleBus\DispatchMessageToMessageBusConsumer">
             <argument type="service" id="simple_bus.asynchronous.command_bus" />

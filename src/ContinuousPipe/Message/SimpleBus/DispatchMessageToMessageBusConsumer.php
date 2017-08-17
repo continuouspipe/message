@@ -11,14 +11,14 @@ class DispatchMessageToMessageBusConsumer implements MessageConsumer
     /**
      * @var MessageBus
      */
-    private $eventBus;
+    private $messageBus;
 
     /**
-     * @param MessageBus $eventBus
+     * @param MessageBus $messageBus
      */
-    public function __construct(MessageBus $eventBus)
+    public function __construct(MessageBus $messageBus)
     {
-        $this->eventBus = $eventBus;
+        $this->messageBus = $messageBus;
     }
 
     /**
@@ -26,6 +26,6 @@ class DispatchMessageToMessageBusConsumer implements MessageConsumer
      */
     public function consume(Message $message)
     {
-        $this->eventBus->handle($message);
+        $this->messageBus->handle($message);
     }
 }
