@@ -2,6 +2,8 @@
 
 namespace ContinuousPipe\Message\Transaction;
 
-interface LongRunningMessage
+use ContinuousPipe\Message\Message;
+
+interface LongRunningMessage extends Message
 {
 }
