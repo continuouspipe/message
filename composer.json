@@ -6,5 +6,8 @@
     "require": {
         "google/cloud": "^0.36.0",
         "tolerance/tolerance": "dev-master"
+    },
+    "require-dev": {
+        "phpspec/phpspec": "^4.0"
     }
 }

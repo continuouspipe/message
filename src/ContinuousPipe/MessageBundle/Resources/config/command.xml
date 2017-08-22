@@ -16,11 +16,14 @@
             <argument type="service" id="logger" />
             <argument type="service" id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" />
         </service>
+        <service id="continuouspipe.message.command.transaction_manager.message_extender_factory" class="ContinuousPipe\Message\Transaction\Deadline\MessageDeadlineExtenderFactory">
+            <argument>%kernel.root_dir%/console</argument>
+        </service>
         <service id="continuouspipe.message.command.transaction_manager.extend_deadline_during_transaction"
                  class="ContinuousPipe\Message\Transaction\ExtendDeadlineDuringTransaction"
                  decorates="continuouspipe.message.command.transaction_manager.default">
             <argument type="service" id="continuouspipe.message.command.transaction_manager.extend_deadline_during_transaction.inner" />
-            <argument>%kernel.root_dir%/console</argument>
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.message_extender_factory" />
         </service>
         <service id="continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages"
                  class="ContinuousPipe\Message\Delay\ModifyDeadlineForDelayedMessages"
