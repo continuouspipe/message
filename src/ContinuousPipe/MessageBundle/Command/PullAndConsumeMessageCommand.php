@@ -11,13 +11,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 use Tolerance\Operation\ExceptionCatcher\ThrowableCatcherVoter;
 
-class PullAndConsumeMessageCommand extends ContainerAwareCommand
+class PullAndConsumeMessageCommand extends Command
 {
     /**
      * Maximum runtime, in seconds. 30 minutes, in order to prevent any database-timeout related issue.
@@ -40,11 +41,6 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
     private $messageConsumer;
 
     /**
-     * @var ThrowableCatcherVoter
-     */
-    private $throwableCatcherVoter;
-
-    /**
      * @var TransactionManagerFactory
      */
     private $transactionManagerFactory;
@@ -57,7 +53,6 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
     public function __construct(
         MessagePuller $messagePuller,
         MessageConsumer $messageConsumer,
-        ThrowableCatcherVoter $throwableCatcherVoter,
         TransactionManagerFactory $transactionManagerFactory,
         LoggerInterface $logger
     ) {
@@ -65,7 +60,6 @@ class PullAndConsumeMessageCommand extends ContainerAwareCommand
 
         $this->messagePuller = $messagePuller;
         $this->messageConsumer = $messageConsumer;
-        $this->throwableCatcherVoter = $throwableCatcherVoter;
         $this->transactionManagerFactory = $transactionManagerFactory;
         $this->logger = $logger;
     }

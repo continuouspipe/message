@@ -2,11 +2,10 @@
 
 namespace ContinuousPipe\Message\GooglePubSub;
 
-use ContinuousPipe\Message\Message;
 use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessageException;
 use ContinuousPipe\Message\MessagePuller;
-use Google\Cloud\Exception\GoogleException;
+use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
 use Google\Cloud\PubSub\Subscription;
 use Google\Cloud\ServiceBuilder;
