@@ -8,6 +8,7 @@ use ContinuousPipe\Message\Direct\FromProducerToConsumer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller;
 use ContinuousPipe\Message\InMemory\ArrayMessagePuller;
+use Google\Cloud\ServiceBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -115,11 +116,20 @@ class MessageExtension extends Extension
             );
 
             $container->setDefinition(
+                $producerName.'.service_builder',
+                new Definition(ServiceBuilder::class, [
+                    [
+                        'projectId' => $driverConfiguration['google_pub_sub']['project_id'],
+                        'keyFilePath' => $driverConfiguration['google_pub_sub']['service_account_path'],
+                    ]
+                ])
+            );
+
+            $container->setDefinition(
                 $producerName,
                 new Definition(PubSubMessageProducer::class, [
                     new Reference('jms_serializer'),
-                    $driverConfiguration['google_pub_sub']['project_id'],
-                    $driverConfiguration['google_pub_sub']['service_account_path'],
+                    new Reference($producerName.'.service_builder'),
                     $driverConfiguration['google_pub_sub']['topic']
                 ])
             );
