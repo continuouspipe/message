@@ -4,6 +4,7 @@ namespace ContinuousPipe\MessageBundle\Command;
 
 use ContinuousPipe\Message\MessageConsumer;
 use ContinuousPipe\Message\MessagePuller;
+use ContinuousPipe\Message\MessagePullerRegistry;
 use ContinuousPipe\Message\PulledMessage;
 use ContinuousPipe\Message\Transaction\TransactionManager;
 use ContinuousPipe\Message\Transaction\TransactionManagerFactory;
@@ -13,6 +14,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
@@ -31,9 +33,9 @@ class PullAndConsumeMessageCommand extends Command
     private $shouldStop = false;
 
     /**
-     * @var MessagePuller
+     * @var MessagePullerRegistry
      */
-    private $messagePuller;
+    private $messagePullerRegistry;
 
     /**
      * @var MessageConsumer
@@ -49,19 +51,37 @@ class PullAndConsumeMessageCommand extends Command
      * @var LoggerInterface
      */
     private $logger;
+    /**
+     * @var null|string
+     */
+    private $connectionName;
 
+    /**
+     * @param MessagePullerRegistry $messagePullerRegistry
+     * @param MessageConsumer $messageConsumer
+     * @param TransactionManagerFactory $transactionManagerFactory
+     * @param LoggerInterface $logger
+     * @param string|null $connectionName
+     */
     public function __construct(
-        MessagePuller $messagePuller,
+        MessagePullerRegistry $messagePullerRegistry,
         MessageConsumer $messageConsumer,
         TransactionManagerFactory $transactionManagerFactory,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        string $connectionName = null
     ) {
         parent::__construct('continuouspipe:message:pull-and-consume');
 
-        $this->messagePuller = $messagePuller;
+        $this->messagePullerRegistry = $messagePullerRegistry;
         $this->messageConsumer = $messageConsumer;
         $this->transactionManagerFactory = $transactionManagerFactory;
         $this->logger = $logger;
+        $this->connectionName = $connectionName;
+    }
+
+    protected function configure()
+    {
+        $this->addOption('connection', 'c', InputOption::VALUE_REQUIRED, 'Name of the connection to use', null);
     }
 
     public function run(InputInterface $input, OutputInterface $output)
@@ -73,7 +93,7 @@ class PullAndConsumeMessageCommand extends Command
         $startTime = time();
 
         while (!$this->shouldStop) {
-            $this->pullMessages($output);
+            $this->pullMessages($input, $output);
 
             $ranMoreThanRunTime = (time() - $startTime) > self::MAX_RUNTIME_IN_SECS;
             $this->shouldStop = $this->shouldStop || $ranMoreThanRunTime;
@@ -87,9 +107,15 @@ class PullAndConsumeMessageCommand extends Command
         $this->shouldStop = true;
     }
 
-    private function pullMessages(OutputInterface $output)
+    private function pullMessages(InputInterface $input, OutputInterface $output)
     {
-        foreach ($this->messagePuller->pull() as $pulledMessage) {
+        if (null === ($connectionName = $input->getOption('connection') ?: $this->connectionName)) {
+            throw new \InvalidArgumentException('No default connection configured. Please use the `--connection` argument to specify the connection to use');
+        }
+
+        $puller = $this->messagePullerRegistry->pullerForConnection($connectionName);
+
+        foreach ($puller->pull() as $pulledMessage) {
             $this->transactionManagerFactory->forMessage($pulledMessage)->run($pulledMessage, function (PulledMessage $pulledMessage) use ($output) {
                 $message = $pulledMessage->getMessage();
 

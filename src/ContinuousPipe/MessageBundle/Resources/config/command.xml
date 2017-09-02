@@ -36,12 +36,15 @@
         <service id="continuouspipe.message.command.transaction_manager_factory.default" class="ContinuousPipe\Message\Transaction\DefaultTransactionManagerFactory">
             <argument type="service" id="continuouspipe.message.command.transaction_manager.default"/>
         </service>
+        <service id="continuouspipe.message.puller_registry" class="ContinuousPipe\Message\MessagePullerRegistry">
+            <argument type="service" id="service_container" />
+        </service>
 
         <!-- Command -->
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" class="ContinuousPipe\Message\AutoRetry\CatchDoctrineDriverException" />
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" alias="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" />
         <service id="continuouspipe.message.command.pull_and_consumer" class="ContinuousPipe\MessageBundle\Command\PullAndConsumeMessageCommand">
-            <argument /> <!-- Message puller -->
+            <argument /> <!-- Message puller or message puller registry-->
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.transaction_manager_factory.default" />
             <argument type="service" id="logger" />

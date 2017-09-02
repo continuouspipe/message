@@ -48,9 +48,16 @@ class MessageExtension extends Extension
                 $container->removeDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages');
             }
 
+            if (isset($config['command']['connection'])) {
+                $commandPuller = new Reference('continuouspipe.message.' . $config['command']['connection'] . '.message_puller');
+            } else {
+                $commandPuller = new Reference('continuouspipe.message.puller_registry');
+            }
+
             $container
                 ->getDefinition('continuouspipe.message.command.pull_and_consumer')
-                ->replaceArgument(0, new Reference('continuouspipe.message.' . $config['command']['connection'] . '.message_puller'));
+                ->replaceArgument(0, $commandPuller)
+            ;
         }
 
         $drivers = [];
@@ -83,9 +90,9 @@ class MessageExtension extends Extension
         if (array_key_exists('direct', $driverConfiguration)) {
             $this->createDirectConnection($container, $pullerName, $producerName);
         } elseif (array_key_exists('google_pub_sub', $driverConfiguration)) {
-            $this->createGooglePubSubConnection($container, $pullerName, $producerName, $driverConfiguration);
+            $this->createGooglePubSubConnection($container, $pullerName, $producerName, $driverConfiguration['google_pub_sub']);
         } elseif (array_key_exists('router', $driverConfiguration)) {
-            $this->createRouterConnection($container, $pullerName, $producerName, $driverConfiguration);
+            $this->createRouterConnection($container, $pullerName, $producerName, $driverConfiguration['router']);
         } else {
             throw new \RuntimeException(sprintf(
                 'Driver not found with the following configuration keys: %s',
@@ -132,10 +139,10 @@ class MessageExtension extends Extension
             new Definition(PubSubMessagePuller::class, [
                 new Reference('jms_serializer'),
                 new Reference('logger'),
-                $driverConfiguration['google_pub_sub']['project_id'],
-                $driverConfiguration['google_pub_sub']['service_account_path'],
-                $driverConfiguration['google_pub_sub']['topic'],
-                $driverConfiguration['google_pub_sub']['subscription']
+                $driverConfiguration['project_id'],
+                $driverConfiguration['service_account_path'],
+                $driverConfiguration['topic'],
+                $driverConfiguration['subscription']
             ])
         );
 
@@ -143,8 +150,8 @@ class MessageExtension extends Extension
             $producerName . '.service_builder',
             new Definition(ServiceBuilder::class, [
                 [
-                    'projectId' => $driverConfiguration['google_pub_sub']['project_id'],
-                    'keyFilePath' => $driverConfiguration['google_pub_sub']['service_account_path'],
+                    'projectId' => $driverConfiguration['project_id'],
+                    'keyFilePath' => $driverConfiguration['service_account_path'],
                 ]
             ])
         );
@@ -154,7 +161,7 @@ class MessageExtension extends Extension
             new Definition(PubSubMessageProducer::class, [
                 new Reference('jms_serializer'),
                 new Reference($producerName . '.service_builder'),
-                $driverConfiguration['google_pub_sub']['topic']
+                $driverConfiguration['topic']
             ])
         );
     }
@@ -162,8 +169,8 @@ class MessageExtension extends Extension
     private function createRouterConnection(ContainerBuilder $container, string $pullerName, string $producerName, array $driverConfiguration)
     {
         $container->setDefinition($producerName, new Definition(RoutedMessageProducer::class, [
-            array_map(function(string $connectionName) {
-                return new Reference($this->getConnectionProducerName($connectionName));
+            array_map(function(array $configuration) {
+                return new Reference($this->getConnectionProducerName($configuration['connection']));
             }, $driverConfiguration['message_to_connection_mapping']),
         ]));
     }
