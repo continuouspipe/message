@@ -28,9 +28,9 @@ class ExtendDeadlineDuringTransactionSpec extends ObjectBehavior
         $this->run($pulledMessage, function() {});
     }
 
-    function it_extends_the_message_dealine_when_it_is_a_long_running_with_an_exception(TransactionManager $transactionManager, PulledMessage $pulledMessage, LongRunningMessage $message, MessageDeadlineExtenderFactory $extenderFactory, MessageDeadlineExtender $extender)
+    function it_extends_the_message_dealine_when_it_is_a_long_running_with_an_exception(TransactionManager $transactionManager, PulledMessage $pulledMessage, LongRunningMessage $longRunningMessage, MessageDeadlineExtenderFactory $extenderFactory, MessageDeadlineExtender $extender)
     {
-        $pulledMessage->getMessage()->willReturn($message);
+        $pulledMessage->getMessage()->willReturn($longRunningMessage);
 
         $extenderFactory->forMessage($pulledMessage)->willReturn($extender);
         $transactionManager->run($pulledMessage, Argument::any())->willThrow(new \RuntimeException('Something went wrong'));
