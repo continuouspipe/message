@@ -68,7 +68,7 @@ class ConsumeMessageCommand extends Command
         }
 
         $message = new ReceivedMessage($deserializedMessage);
-        $this->transactionManagerFactory->forMessage($message)->run($message, function(PulledMessage $pulledMessage) {
+        $this->transactionManagerFactory->forMessage($message)->run($message, function (PulledMessage $pulledMessage) {
             return $this->messageConsumer->consume($pulledMessage->getMessage());
         });
     }

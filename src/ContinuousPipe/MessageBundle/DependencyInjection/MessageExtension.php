@@ -102,7 +102,8 @@ class MessageExtension extends Extension
 
         if ($configuration['debug']) {
             $container->setDefinition($producerName . '.traced', (new Definition(
-                TracedMessageProducer::class, [
+                TracedMessageProducer::class,
+                [
                     new Reference($producerName . '.traced.inner')
                 ]
             ))->setDecoratedService($producerName));
@@ -169,7 +170,7 @@ class MessageExtension extends Extension
     private function createRouterConnection(ContainerBuilder $container, string $pullerName, string $producerName, array $driverConfiguration)
     {
         $container->setDefinition($producerName, new Definition(RoutedMessageProducer::class, [
-            array_map(function(array $configuration) {
+            array_map(function (array $configuration) {
                 return new Reference($this->getConnectionProducerName($configuration['connection']));
             }, $driverConfiguration['message_to_connection_mapping']),
         ]));
