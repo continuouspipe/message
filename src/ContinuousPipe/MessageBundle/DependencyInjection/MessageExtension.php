@@ -8,6 +8,7 @@ use ContinuousPipe\Message\Direct\FromProducerToConsumer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller;
 use ContinuousPipe\Message\InMemory\ArrayMessagePuller;
+use ContinuousPipe\Message\Router\RoutedMessageProducer;
 use Google\Cloud\ServiceBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -26,13 +27,13 @@ class MessageExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
 
         if (isset($config['simple_bus'])) {
             $loader->load('simple-bus.xml');
 
             $container->getDefinition('continuouspipe.message.simple_bus.producer')->replaceArgument(0, new Reference(
-                'continuouspipe.message.'.$config['simple_bus']['connection'].'.message_producer'
+                'continuouspipe.message.' . $config['simple_bus']['connection'] . '.message_producer'
             ));
         }
 
@@ -47,9 +48,15 @@ class MessageExtension extends Extension
                 $container->removeDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages');
             }
 
+            if (isset($config['command']['connection'])) {
+                $commandPuller = new Reference('continuouspipe.message.' . $config['command']['connection'] . '.message_puller');
+            } else {
+                $commandPuller = new Reference('continuouspipe.message.puller_registry');
+            }
+
             $container
                 ->getDefinition('continuouspipe.message.command.pull_and_consumer')
-                ->replaceArgument(0, new Reference('continuouspipe.message.'.$config['command']['connection'].'.message_puller'))
+                ->replaceArgument(0, $commandPuller)
             ;
         }
 
@@ -61,7 +68,7 @@ class MessageExtension extends Extension
         }
 
         foreach ($drivers as $driver) {
-            if (file_exists($filePath = 'drivers/'.$driver.'.xml')) {
+            if (file_exists($filePath = 'drivers/' . $driver . '.xml')) {
                 $loader->load($filePath);
             }
         }
@@ -77,70 +84,105 @@ class MessageExtension extends Extension
     {
         $driverConfiguration = $configuration['driver'];
 
-        $pullerName = 'continuouspipe.message.' . $name . '.message_puller';
-        $producerName = 'continuouspipe.message.' . $name . '.message_producer';
+        $pullerName = $this->getConnectionPullerName($name);
+        $producerName = $this->getConnectionProducerName($name);
 
         if (array_key_exists('direct', $driverConfiguration)) {
-            $container->setDefinition(
-                $pullerName,
-                new Definition(ArrayMessagePuller::class)
-            );
-
-            $container->setDefinition(
-                $producerName,
-                new Definition(FromProducerToConsumer::class, [
-                    new Reference('continuouspipe.message.message_consumer'),
-                    new Reference('jms_serializer'),
-                ])
-            );
-
-            $container->setDefinition(
-                $producerName.'.delayed_messages_buffer',
-                (new Definition(DelayedMessagesBuffer::class, [
-                    new Reference($producerName.'.delayed_messages_buffer.inner'),
-                ]))->setDecoratedService($producerName)
-            );
-        }
-
-        if (array_key_exists('google_pub_sub', $driverConfiguration)) {
-            $container->setDefinition(
-                $pullerName,
-                new Definition(PubSubMessagePuller::class, [
-                    new Reference('jms_serializer'),
-                    new Reference('logger'),
-                    $driverConfiguration['google_pub_sub']['project_id'],
-                    $driverConfiguration['google_pub_sub']['service_account_path'],
-                    $driverConfiguration['google_pub_sub']['topic'],
-                    $driverConfiguration['google_pub_sub']['subscription']
-                ])
-            );
-
-            $container->setDefinition(
-                $producerName.'.service_builder',
-                new Definition(ServiceBuilder::class, [
-                    [
-                        'projectId' => $driverConfiguration['google_pub_sub']['project_id'],
-                        'keyFilePath' => $driverConfiguration['google_pub_sub']['service_account_path'],
-                    ]
-                ])
-            );
-
-            $container->setDefinition(
-                $producerName,
-                new Definition(PubSubMessageProducer::class, [
-                    new Reference('jms_serializer'),
-                    new Reference($producerName.'.service_builder'),
-                    $driverConfiguration['google_pub_sub']['topic']
-                ])
-            );
+            $this->createDirectConnection($container, $pullerName, $producerName);
+        } elseif (array_key_exists('google_pub_sub', $driverConfiguration)) {
+            $this->createGooglePubSubConnection($container, $pullerName, $producerName, $driverConfiguration['google_pub_sub']);
+        } elseif (array_key_exists('router', $driverConfiguration)) {
+            $this->createRouterConnection($container, $pullerName, $producerName, $driverConfiguration['router']);
+        } else {
+            throw new \RuntimeException(sprintf(
+                'Driver not found with the following configuration keys: %s',
+                implode(', ', array_keys($driverConfiguration))
+            ));
         }
 
         if ($configuration['debug']) {
-            $container->setDefinition($producerName.'.traced', (new Definition(
-                TracedMessageProducer::class, [
-                    new Reference($producerName.'.traced.inner')
+            $container->setDefinition($producerName . '.traced', (new Definition(
+                TracedMessageProducer::class,
+                [
+                    new Reference($producerName . '.traced.inner')
                 ]
             ))->setDecoratedService($producerName));
         }
+    }
+
+    private function createDirectConnection(ContainerBuilder $container, string $pullerName, string $producerName)
+    {
+        $container->setDefinition(
+            $pullerName,
+            new Definition(ArrayMessagePuller::class)
+        );
+
+        $container->setDefinition(
+            $producerName,
+            new Definition(FromProducerToConsumer::class, [
+                new Reference('continuouspipe.message.message_consumer'),
+                new Reference('jms_serializer'),
+            ])
+        );
+
+        $container->setDefinition(
+            $producerName . '.delayed_messages_buffer',
+            (new Definition(DelayedMessagesBuffer::class, [
+                new Reference($producerName . '.delayed_messages_buffer.inner'),
+            ]))->setDecoratedService($producerName)
+        );
+    }
+
+    private function createGooglePubSubConnection(ContainerBuilder $container, string $pullerName, string $producerName, array $driverConfiguration)
+    {
+        $container->setDefinition(
+            $pullerName,
+            new Definition(PubSubMessagePuller::class, [
+                new Reference('jms_serializer'),
+                new Reference('logger'),
+                $driverConfiguration['project_id'],
+                $driverConfiguration['service_account_path'],
+                $driverConfiguration['topic'],
+                $driverConfiguration['subscription']
+            ])
+        );
+
+        $container->setDefinition(
+            $producerName . '.service_builder',
+            new Definition(ServiceBuilder::class, [
+                [
+                    'projectId' => $driverConfiguration['project_id'],
+                    'keyFilePath' => $driverConfiguration['service_account_path'],
+                ]
+            ])
+        );
+
+        $container->setDefinition(
+            $producerName,
+            new Definition(PubSubMessageProducer::class, [
+                new Reference('jms_serializer'),
+                new Reference($producerName . '.service_builder'),
+                $driverConfiguration['topic']
+            ])
+        );
+    }
+
+    private function createRouterConnection(ContainerBuilder $container, string $pullerName, string $producerName, array $driverConfiguration)
+    {
+        $container->setDefinition($producerName, new Definition(RoutedMessageProducer::class, [
+            array_map(function (array $configuration) {
+                return new Reference($this->getConnectionProducerName($configuration['connection']));
+            }, $driverConfiguration['message_to_connection_mapping']),
+        ]));
+    }
+
+    private function getConnectionPullerName(string $name): string
+    {
+        return 'continuouspipe.message.' . $name . '.message_puller';
+    }
+
+    private function getConnectionProducerName(string $name): string
+    {
+        return 'continuouspipe.message.' . $name . '.message_producer';
     }
 }
