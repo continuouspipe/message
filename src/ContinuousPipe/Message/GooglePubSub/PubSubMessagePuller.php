@@ -38,8 +38,12 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
      * @var string
      */
     private $subscriptionName;
+    /**
+     * @var array
+     */
+    private $options;
 
-    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName)
+    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName, array $options = [])
     {
         $this->serializer = $serializer;
         $this->topicName = $topicName;
@@ -49,6 +53,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
         ]);
         $this->subscriptionName = $subscriptionName;
         $this->logger = $logger;
+        $this->options = $options;
     }
 
     public function pull(): \Generator
@@ -103,7 +108,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
 
     private function getSubscription(): Subscription
     {
-        $pubSub = $this->serviceBuilder->pubsub();
+        $pubSub = $this->serviceBuilder->pubsub($this->options);
 
         return $pubSub->subscription($this->subscriptionName);
     }

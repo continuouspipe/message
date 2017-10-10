@@ -143,7 +143,8 @@ class MessageExtension extends Extension
                 $driverConfiguration['project_id'],
                 $driverConfiguration['service_account_path'],
                 $driverConfiguration['topic'],
-                $driverConfiguration['subscription']
+                $driverConfiguration['subscription'],
+                $driverConfiguration['options']
             ])
         );
 
