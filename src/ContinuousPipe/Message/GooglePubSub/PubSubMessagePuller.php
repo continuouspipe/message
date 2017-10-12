@@ -6,9 +6,9 @@ use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessageException;
 use ContinuousPipe\Message\MessagePuller;
 use Google\Cloud\Core\Exception\GoogleException;
+use Google\Cloud\Core\ServiceBuilder;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
 use Google\Cloud\PubSub\Subscription;
-use Google\Cloud\ServiceBuilder;
 use JMS\Serializer\Exception\Exception as SerializerException;
 use JMS\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
@@ -47,13 +47,14 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
     {
         $this->serializer = $serializer;
         $this->topicName = $topicName;
-        $this->serviceBuilder = new ServiceBuilder([
-            'projectId' => $projectId,
-            'keyFilePath' => $keyFilePath,
-        ]);
         $this->subscriptionName = $subscriptionName;
         $this->logger = $logger;
         $this->options = $options;
+
+        $this->serviceBuilder = new ServiceBuilder([
+            'projectId' => $projectId,
+            'keyFilePath' => $keyFilePath,
+        ] + $options);
     }
 
     public function pull(): \Generator
@@ -108,7 +109,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
 
     private function getSubscription(): Subscription
     {
-        $pubSub = $this->serviceBuilder->pubsub($this->options);
+        $pubSub = $this->serviceBuilder->pubsub();
 
         return $pubSub->subscription($this->subscriptionName);
     }
