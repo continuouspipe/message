@@ -6,5 +6,5 @@ use ContinuousPipe\Message\PulledMessage;
 
 interface TransactionManager
 {
-    public function run(PulledMessage $message, callable $callable);
+    public function run(PulledMessage $message, callable $callable, array $attributes = []);
 }

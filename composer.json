@@ -7,8 +7,9 @@
         "psr-4": { "": "tests/" }
     },
     "require": {
-        "google/cloud": "^0.36.0",
-        "tolerance/tolerance": "^0.4.1"
+        "google/cloud": "^0.39.0",
+        "tolerance/tolerance": "^0.4.1",
+        "seld/signal-handler": "^1.1"
     },
     "require-dev": {
         "phpspec/phpspec": "^4.0",

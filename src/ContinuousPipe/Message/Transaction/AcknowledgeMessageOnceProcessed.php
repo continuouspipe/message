@@ -34,21 +34,26 @@ final class AcknowledgeMessageOnceProcessed implements TransactionManager
         $this->throwableCatcherVoter = $throwableCatcherVoter;
     }
 
-    public function run(PulledMessage $message, callable $callable)
+    public function run(PulledMessage $message, callable $callable, array $attributes = [])
     {
         try {
-            $result = $this->transactionManager->run($message, $callable);
+            $result = $this->transactionManager->run($message, $callable, $attributes);
         } catch (\Throwable $e) {
-            // The throwable will be handled later...
-            $this->logger->warning('An exception occurred while processing the message', [
-                'exception' => $e,
-            ]);
-
             $result = null;
         }
 
-        if (!isset($e) || !$this->throwableCatcherVoter->shouldCatchThrowable($e)) {
+        if (!isset($e)) {
             $message->acknowledge();
+        } else if (!$this->throwableCatcherVoter->shouldCatchThrowable($e)) {
+            $message->acknowledge();
+
+            $this->logger->error('Could not process message, did not re-queue', [
+                'exception' => $e,
+            ]);
+        } else {
+            $this->logger->warning('An exception occurred while processing the message, will be retried.', [
+                'exception' => $e,
+            ]);
         }
 
         return $result;

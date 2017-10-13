@@ -6,9 +6,9 @@ use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessageException;
 use ContinuousPipe\Message\MessagePuller;
 use Google\Cloud\Core\Exception\GoogleException;
+use Google\Cloud\Core\ServiceBuilder;
 use Google\Cloud\PubSub\Connection\ConnectionInterface;
 use Google\Cloud\PubSub\Subscription;
-use Google\Cloud\ServiceBuilder;
 use JMS\Serializer\Exception\Exception as SerializerException;
 use JMS\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
@@ -38,17 +38,24 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
      * @var string
      */
     private $subscriptionName;
+    /**
+     * @var array
+     */
+    private $options;
 
-    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName)
+    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName, array $options = [], ServiceBuilder $serviceBuilder = null)
     {
         $this->serializer = $serializer;
         $this->topicName = $topicName;
-        $this->serviceBuilder = new ServiceBuilder([
-            'projectId' => $projectId,
-            'keyFilePath' => $keyFilePath,
-        ]);
         $this->subscriptionName = $subscriptionName;
         $this->logger = $logger;
+        $this->serviceBuilder = $serviceBuilder ?: new ServiceBuilder();
+
+        $this->options = [
+            'projectId' => $projectId,
+            'keyFilePath' => $keyFilePath,
+        ] + $options;
+
     }
 
     public function pull(): \Generator
@@ -56,7 +63,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
         $subscription = $this->getSubscription();
 
         try {
-            foreach ($subscription->pull(['returnImmediately' => false, 'maxMessages' => 1,]) as $googleCloudMessage) {
+            foreach ($subscription->pull(['returnImmediately' => true, 'maxMessages' => 1,]) as $googleCloudMessage) {
                 /** @var \Google\Cloud\PubSub\Message $googleCloudMessage */
 
                 try {
@@ -77,6 +84,10 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
                 }
             }
         } catch (GoogleException $e) {
+            if (false !== strpos($e->getMessage(),'Operation timed out')) {
+                return;
+            }
+
             throw new MessageException('Unable to pull messages', $e->getCode(), $e);
         }
     }
@@ -103,7 +114,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
 
     private function getSubscription(): Subscription
     {
-        $pubSub = $this->serviceBuilder->pubsub();
+        $pubSub = $this->serviceBuilder->pubsub($this->options);
 
         return $pubSub->subscription($this->subscriptionName);
     }

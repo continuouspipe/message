@@ -7,23 +7,42 @@ use ContinuousPipe\Message\PulledMessage;
 class MessageDeadlineExtenderFactory
 {
     /**
-     * @var string
+     * @var string[]
      */
-    private $consolePath;
+    private $consolePaths;
 
     /**
-     * @param string $consolePath
+     * @param string|array $consolePaths
      */
-    public function __construct(string $consolePath)
+    public function __construct($consolePaths)
     {
-        $this->consolePath = $consolePath;
+        $this->consolePaths = !is_array($consolePaths) ? [$consolePaths] : $consolePaths;
     }
 
-    public function forMessage(PulledMessage $message)
+    public function forMessage(PulledMessage $message, array $attributes = [])
     {
+        if (!isset($attributes['connectionName'])) {
+            throw new \RuntimeException('Must have the `connectionName` attribute');
+        }
+
         return new ProcessMessageDeadlineExtender(
-            $this->consolePath,
+            $this->getConsolePath(),
+            $attributes['connectionName'],
             $message
         );
+    }
+
+    private function getConsolePath() : string
+    {
+        foreach ($this->consolePaths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        throw new \RuntimeException(sprintf(
+            'Cannot find console\'s path. Tried: %s',
+            implode(', ', $this->consolePaths)
+        ));
     }
 }

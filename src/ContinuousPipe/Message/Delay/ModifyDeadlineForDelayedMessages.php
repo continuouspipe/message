@@ -31,7 +31,7 @@ class ModifyDeadlineForDelayedMessages implements TransactionManager
         $this->timeResolver = $timeResolver;
     }
 
-    public function run(PulledMessage $message, callable $callable)
+    public function run(PulledMessage $message, callable $callable, array $attributes = [])
     {
         $innerMessage = $message->getMessage();
 
@@ -49,6 +49,6 @@ class ModifyDeadlineForDelayedMessages implements TransactionManager
             }
         }
 
-        return $this->transactionManager->run($message, $callable);
+        return $this->transactionManager->run($message, $callable, $attributes);
     }
 }

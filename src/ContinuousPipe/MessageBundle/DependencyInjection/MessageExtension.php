@@ -68,8 +68,8 @@ class MessageExtension extends Extension
         }
 
         foreach ($drivers as $driver) {
-            if (file_exists($filePath = 'drivers/' . $driver . '.xml')) {
-                $loader->load($filePath);
+            if (in_array($driver, ['google_pub_sub'])) {
+                $loader->load('drivers/' . $driver . '.xml');
             }
         }
 
@@ -143,7 +143,8 @@ class MessageExtension extends Extension
                 $driverConfiguration['project_id'],
                 $driverConfiguration['service_account_path'],
                 $driverConfiguration['topic'],
-                $driverConfiguration['subscription']
+                $driverConfiguration['subscription'],
+                $driverConfiguration['options']
             ])
         );
 
