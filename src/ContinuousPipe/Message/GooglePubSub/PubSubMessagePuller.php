@@ -43,18 +43,19 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
      */
     private $options;
 
-    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName, array $options = [])
+    public function __construct(SerializerInterface $serializer, LoggerInterface $logger, string $projectId, string $keyFilePath, string $topicName, string $subscriptionName, array $options = [], ServiceBuilder $serviceBuilder = null)
     {
         $this->serializer = $serializer;
         $this->topicName = $topicName;
         $this->subscriptionName = $subscriptionName;
         $this->logger = $logger;
-        $this->options = $options;
+        $this->serviceBuilder = $serviceBuilder ?: new ServiceBuilder();
 
-        $this->serviceBuilder = new ServiceBuilder([
+        $this->options = [
             'projectId' => $projectId,
             'keyFilePath' => $keyFilePath,
-        ] + $options);
+        ] + $options;
+
     }
 
     public function pull(): \Generator
@@ -83,6 +84,10 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
                 }
             }
         } catch (GoogleException $e) {
+            if (false !== strpos($e->getMessage(),'Operation timed out')) {
+                return;
+            }
+            
             throw new MessageException('Unable to pull messages', $e->getCode(), $e);
         }
     }
@@ -109,7 +114,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
 
     private function getSubscription(): Subscription
     {
-        $pubSub = $this->serviceBuilder->pubsub();
+        $pubSub = $this->serviceBuilder->pubsub($this->options);
 
         return $pubSub->subscription($this->subscriptionName);
     }
