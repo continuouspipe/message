@@ -8,7 +8,8 @@
     },
     "require": {
         "google/cloud": "^0.39.0",
-        "tolerance/tolerance": "^0.4.1"
+        "tolerance/tolerance": "^0.4.1",
+        "seld/signal-handler": "^1.1"
     },
     "require-dev": {
         "phpspec/phpspec": "^4.0",

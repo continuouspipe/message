@@ -11,6 +11,7 @@ use ContinuousPipe\Message\Transaction\TransactionManagerFactory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Psr\Log\LoggerInterface;
+use Seld\Signal\SignalHandler;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -26,11 +27,6 @@ class PullAndConsumeMessageCommand extends Command
      * Maximum runtime, in seconds. 30 minutes, in order to prevent any database-timeout related issue.
      */
     const MAX_RUNTIME_IN_SECS = 1800;
-
-    /**
-     * @var bool
-     */
-    private $shouldStop = false;
 
     /**
      * @var MessagePullerRegistry
@@ -86,28 +82,25 @@ class PullAndConsumeMessageCommand extends Command
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        pcntl_signal(SIGTERM, [$this, 'stopCommand']);
-        pcntl_signal(SIGINT, [$this, 'stopCommand']);
-
         $output->writeln('Waiting for messages...');
         $startTime = time();
 
-        while (!$this->shouldStop) {
-            $this->pullMessages($input, $output);
+        $signal = SignalHandler::create([SIGINT, SIGTERM], function($signal, $signalName) use ($output) {
+            $output->writeln(sprintf('Received %s, will stop...', $signalName));
+        });
+
+        $shouldStop = false;
+        while (!$shouldStop) {
+            $this->pullMessages($input, $output, $signal);
 
             $ranMoreThanRunTime = (time() - $startTime) > self::MAX_RUNTIME_IN_SECS;
-            $this->shouldStop = $this->shouldStop || $ranMoreThanRunTime;
+            $shouldStop = $shouldStop || $signal->isTriggered() || $ranMoreThanRunTime;
         }
 
-        $output->writeln('The worker has stopped (should have stopped: '.($this->shouldStop ? 'yes' : 'no').')');
+        $output->writeln('The worker has stopped (should have stopped: ' . ($shouldStop ? 'yes' : 'no') . ')');
     }
 
-    public function stopCommand()
-    {
-        $this->shouldStop = true;
-    }
-
-    private function pullMessages(InputInterface $input, OutputInterface $output)
+    private function pullMessages(InputInterface $input, OutputInterface $output, SignalHandler $signal)
     {
         if (null === ($connectionName = $input->getOption('connection') ?: $this->connectionName)) {
             throw new \InvalidArgumentException('No default connection configured. Please use the `--connection` argument to specify the connection to use');
@@ -123,6 +116,10 @@ class PullAndConsumeMessageCommand extends Command
                 $this->messageConsumer->consume($message);
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
             });
+
+            if ($signal->isTriggered()) {
+                return;
+            }
         }
     }
 }
