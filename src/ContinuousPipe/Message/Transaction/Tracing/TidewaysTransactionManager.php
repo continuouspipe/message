@@ -40,12 +40,12 @@ class TidewaysTransactionManager implements TransactionManager
         $this->sampleRate = $sampleRate;
     }
 
-    public function run(PulledMessage $message, callable $callable)
+    public function run(PulledMessage $message, callable $callable, array $attributes = [])
     {
         $this->start($message);
 
         try {
-            $result = $this->decoratedManager->run($message, $callable);
+            $result = $this->decoratedManager->run($message, $callable, $attributes);
         } finally {
             $this->stop();
         }

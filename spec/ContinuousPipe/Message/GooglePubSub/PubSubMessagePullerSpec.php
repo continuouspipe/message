@@ -38,7 +38,7 @@ class PubSubMessagePullerSpec extends ObjectBehavior
     function it_pulls_and_deserialize_messages(Subscription $subscription, SerializerInterface $serializer)
     {
         $serializer->deserialize('{}', 'DummyMessage', 'json')->willReturn(new DummyMessage());
-        $subscription->pull(["returnImmediately" => false, "maxMessages" => 1])->will(function() {
+        $subscription->pull(["returnImmediately" => true, "maxMessages" => 1])->will(function() {
             yield new Message(['data' => '{}', 'attributes' => ['class' => 'DummyMessage']], []);
         });
 
@@ -49,7 +49,7 @@ class PubSubMessagePullerSpec extends ObjectBehavior
 
     function it_throws_a_message_exception(Subscription $subscription)
     {
-        $subscription->pull(["returnImmediately" => false, "maxMessages" => 1])->willThrow(
+        $subscription->pull(["returnImmediately" => true, "maxMessages" => 1])->willThrow(
             new DeadlineExceededException('{\n  \"error\": {\n    \"code\": 504,\n    \"message\": \"The service was unable to fulfill your request. Please try again. [code=8a75]\",\n    \"status\": \"DEADLINE_EXCEEDED\"\n  }\n}', 504)
         );
 
@@ -58,7 +58,7 @@ class PubSubMessagePullerSpec extends ObjectBehavior
 
     function it_ignores_a_timeout_by_just_stopping_yielding(Subscription $subscription)
     {
-        $subscription->pull(["returnImmediately" => false, "maxMessages" => 1])->willThrow(
+        $subscription->pull(["returnImmediately" => true, "maxMessages" => 1])->willThrow(
             new ServiceException('cURL error 28: Operation timed out after 60000 milliseconds with 0 bytes received (see http://curl.haxx.se/libcurl/c/libcurl-errors.html)', 0)
         );
 

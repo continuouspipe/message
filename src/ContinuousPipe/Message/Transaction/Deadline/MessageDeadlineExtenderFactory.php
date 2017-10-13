@@ -19,10 +19,15 @@ class MessageDeadlineExtenderFactory
         $this->consolePaths = !is_array($consolePaths) ? [$consolePaths] : $consolePaths;
     }
 
-    public function forMessage(PulledMessage $message)
+    public function forMessage(PulledMessage $message, array $attributes = [])
     {
+        if (!isset($attributes['connectionName'])) {
+            throw new \RuntimeException('Must have the `connectionName` attribute');
+        }
+
         return new ProcessMessageDeadlineExtender(
             $this->getConsolePath(),
+            $attributes['connectionName'],
             $message
         );
     }

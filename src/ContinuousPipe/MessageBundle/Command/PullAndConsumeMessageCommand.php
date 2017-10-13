@@ -115,7 +115,9 @@ class PullAndConsumeMessageCommand extends Command
                 $output->writeln(sprintf('Consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
                 $this->messageConsumer->consume($message);
                 $output->writeln(sprintf('Finished consuming message "%s" (%s)', get_class($message), $pulledMessage->getIdentifier()));
-            });
+            }, [
+                'connectionName' => $connectionName,
+            ]);
 
             if ($signal->isTriggered()) {
                 return;

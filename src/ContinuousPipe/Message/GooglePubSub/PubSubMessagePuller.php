@@ -63,7 +63,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
         $subscription = $this->getSubscription();
 
         try {
-            foreach ($subscription->pull(['returnImmediately' => false, 'maxMessages' => 1,]) as $googleCloudMessage) {
+            foreach ($subscription->pull(['returnImmediately' => true, 'maxMessages' => 1,]) as $googleCloudMessage) {
                 /** @var \Google\Cloud\PubSub\Message $googleCloudMessage */
 
                 try {

@@ -21,20 +21,28 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
      * @var Process|null
      */
     private $process;
-
     /**
-     * @param string $consolePath
-     * @param PulledMessage $pulledMessage
+     * @var string
      */
-    public function __construct(string $consolePath, PulledMessage $pulledMessage)
+    private $connectionName;
+
+    public function __construct(string $consolePath, string $connectionName, PulledMessage $pulledMessage)
     {
         $this->consolePath = $consolePath;
         $this->pulledMessage = $pulledMessage;
+        $this->connectionName = $connectionName;
     }
 
     public function extend()
     {
-        $this->process = new Process($this->consolePath.' continuouspipe:message:extend-deadline '.$this->pulledMessage->getAcknowledgeIdentifier());
+        $command = sprintf(
+            '%s continuouspipe:message:extend-deadline %s %s',
+            $this->consolePath,
+            $this->connectionName,
+            $this->pulledMessage->getAcknowledgeIdentifier()
+        );
+
+        $this->process = new Process($command);
         $this->process->start();
 
         if (!$this->process->isRunning()) {

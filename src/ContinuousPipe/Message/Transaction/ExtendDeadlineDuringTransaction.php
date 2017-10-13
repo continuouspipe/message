@@ -29,15 +29,15 @@ final class ExtendDeadlineDuringTransaction implements TransactionManager
         $this->deadlineExtenderFactory = $deadlineExtenderFactory;
     }
 
-    public function run(PulledMessage $message, callable $callable)
+    public function run(PulledMessage $message, callable $callable, array $attributes = [])
     {
         if ($message->getMessage() instanceof LongRunningMessage) {
-            $extender = $this->deadlineExtenderFactory->forMessage($message);
+            $extender = $this->deadlineExtenderFactory->forMessage($message, $attributes);
             $extender->extend();
         }
 
         try {
-            return $this->transactionManager->run($message, $callable);
+            return $this->transactionManager->run($message, $callable, $attributes);
         } finally {
             if (isset($extender)) {
                 $extender->stop();

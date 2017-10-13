@@ -6,7 +6,7 @@
 
     <services>
         <service id="continuouspipe.message.command.extend_message_deadline" class="ContinuousPipe\MessageBundle\Command\ExtendMessageDeadlineCommand">
-            <argument type="service" id="continuouspipe.message.google_pub_sub.message_puller"/>
+            <argument type="service" id="continuouspipe.message.puller_registry" />
 
             <tag name="console.command" />
         </service>
