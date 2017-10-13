@@ -85,7 +85,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
             }
         } catch (GoogleException $e) {
             if (false !== strpos($e->getMessage(),'Operation timed out')) {
-                return $this->pull();
+                return;
             }
 
             throw new MessageException('Unable to pull messages', $e->getCode(), $e);
