@@ -36,6 +36,13 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
     {
         $this->process = new Process($this->consolePath.' continuouspipe:message:extend-deadline '.$this->pulledMessage->getAcknowledgeIdentifier());
         $this->process->start();
+
+        if (!$this->process->isRunning()) {
+            throw new \RuntimeException(sprintf(
+                'Extender is not running: %s',
+                $this->process->getErrorOutput()
+            ));
+        }
     }
 
     public function stop()
