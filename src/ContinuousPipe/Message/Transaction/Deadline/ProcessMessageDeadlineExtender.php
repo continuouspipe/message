@@ -21,6 +21,7 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
      * @var Process|null
      */
     private $process;
+
     /**
      * @var string
      */
@@ -55,6 +56,6 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
 
     public function stop()
     {
-        $this->process->stop(0);
+        $this->process->stop(10);
     }
 }
