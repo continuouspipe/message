@@ -40,7 +40,7 @@ class ExtendMessageDeadlineCommand extends ContainerAwareCommand
             throw new \RuntimeException(sprintf('Puller of connection "%s" do not supports expiration management', $connectionName));
         }
 
-        $signal = SignalHandler::create([SIGINT, SIGTERM], function($signal, $signalName) use ($output) {
+        $signal = SignalHandler::create([SIGINT, SIGTERM], function ($signal, $signalName) use ($output) {
             $output->writeln(sprintf('Received %s, will stop...', $signalName));
         });
 

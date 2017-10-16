@@ -85,7 +85,7 @@ class PullAndConsumeMessageCommand extends Command
         $output->writeln('Waiting for messages...');
         $startTime = time();
 
-        $signal = SignalHandler::create([SIGINT, SIGTERM], function($signal, $signalName) use ($output) {
+        $signal = SignalHandler::create([SIGINT, SIGTERM], function ($signal, $signalName) use ($output) {
             $output->writeln(sprintf('Received %s, will stop...', $signalName));
         });
 

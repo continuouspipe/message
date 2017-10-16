@@ -44,7 +44,7 @@ final class AcknowledgeMessageOnceProcessed implements TransactionManager
 
         if (!isset($e)) {
             $message->acknowledge();
-        } else if (!$this->throwableCatcherVoter->shouldCatchThrowable($e)) {
+        } elseif (!$this->throwableCatcherVoter->shouldCatchThrowable($e)) {
             $message->acknowledge();
 
             $this->logger->error('Could not process message, did not re-queue', [

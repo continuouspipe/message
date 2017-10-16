@@ -2,6 +2,7 @@
 
 namespace ContinuousPipe\MessageBundle\DependencyInjection;
 
+use ContinuousPipe\Message\AutoRetry\CatchGivenExceptions;
 use ContinuousPipe\Message\Debug\TracedMessageProducer;
 use ContinuousPipe\Message\Direct\DelayedMessagesBuffer;
 use ContinuousPipe\Message\Direct\FromProducerToConsumer;
@@ -58,6 +59,15 @@ class MessageExtension extends Extension
                 ->getDefinition('continuouspipe.message.command.pull_and_consumer')
                 ->replaceArgument(0, $commandPuller)
             ;
+
+            if (!empty($config['command']['retry_exceptions'])) {
+                $container->setDefinition('continuouspipe.message.command.pull_and_consumer.throwable_catcher', new Definition(
+                    CatchGivenExceptions::class,
+                    [
+                        $config['command']['retry_exceptions'],
+                    ]
+                ));
+            }
         }
 
         $drivers = [];

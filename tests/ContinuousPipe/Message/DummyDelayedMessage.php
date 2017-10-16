@@ -14,9 +14,9 @@ class DummyDelayedMessage implements DelayedMessage
     /**
      * @param \DateTimeInterface $runAt
      */
-    public function __construct(\DateTimeInterface $runAt)
+    public function __construct(\DateTimeInterface $runAt = null)
     {
-        $this->runAt = $runAt;
+        $this->runAt = $runAt ?: new \DateTime();
     }
 
     /**

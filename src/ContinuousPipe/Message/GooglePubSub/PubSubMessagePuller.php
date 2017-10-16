@@ -55,7 +55,6 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
             'projectId' => $projectId,
             'keyFilePath' => $keyFilePath,
         ] + $options;
-
     }
 
     public function pull(): \Generator
@@ -84,7 +83,7 @@ class PubSubMessagePuller implements MessagePuller, MessageDeadlineExpirationMan
                 }
             }
         } catch (GoogleException $e) {
-            if (false !== strpos($e->getMessage(),'Operation timed out')) {
+            if (false !== strpos($e->getMessage(), 'Operation timed out')) {
                 return;
             }
 
