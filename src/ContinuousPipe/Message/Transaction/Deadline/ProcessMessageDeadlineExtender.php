@@ -46,6 +46,9 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
         $this->process = new Process($command);
         $this->process->start();
 
+        // Wait 50ms to ensure the process is correctly started
+        usleep(50 * 1000);
+
         if (!$this->process->isRunning()) {
             throw new \RuntimeException(sprintf(
                 'Extender is not running: %s',
