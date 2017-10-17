@@ -77,6 +77,7 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->scalarNode('connection')->defaultValue(null)->end()
                         ->scalarNode('message_deadline_expiration_manager')->end()
+                        ->booleanNode('allow_multiple_extenders')->defaultTrue()->end()
                         ->arrayNode('retry_exceptions')
                             ->prototype('scalar')->end()
                         ->end()
