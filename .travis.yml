@@ -23,5 +23,6 @@ install:
 
 script:
   - vendor/bin/phpspec r
+  - vendor/bin/phpunit
   - if [[ $lint = 1 ]]; then php php-cs-fixer.phar fix --dry-run --diff --no-ansi; fi
 
