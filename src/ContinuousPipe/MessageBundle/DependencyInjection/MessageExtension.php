@@ -60,6 +60,11 @@ class MessageExtension extends Extension
                 ->replaceArgument(0, $commandPuller)
             ;
 
+            $container
+                ->getDefinition('continuouspipe.message.command.transaction_manager.message_extender_factory')
+                ->setArgument(1, $config['command']['allow_multiple_extenders'])
+            ;
+
             if (!empty($config['command']['retry_exceptions'])) {
                 $container->setDefinition('continuouspipe.message.command.pull_and_consumer.throwable_catcher', new Definition(
                     CatchGivenExceptions::class,

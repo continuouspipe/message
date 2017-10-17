@@ -12,11 +12,18 @@ class ProcessMessageDeadlineExtenderFactory implements MessageDeadlineExtenderFa
     private $consolePaths;
 
     /**
-     * @param string|array $consolePaths
+     * @var bool
      */
-    public function __construct($consolePaths)
+    private $allowMultiple;
+
+    /**
+     * @param string|array $consolePaths
+     * @param bool         $allowMultiple
+     */
+    public function __construct($consolePaths, bool $allowMultiple = true)
     {
         $this->consolePaths = !is_array($consolePaths) ? [$consolePaths] : $consolePaths;
+        $this->allowMultiple = $allowMultiple;
     }
 
     public function forMessage(PulledMessage $message, array $attributes = [])
@@ -28,7 +35,8 @@ class ProcessMessageDeadlineExtenderFactory implements MessageDeadlineExtenderFa
         return new ProcessMessageDeadlineExtender(
             $this->getConsolePath(),
             $attributes['connectionName'],
-            $message
+            $message,
+            $this->allowMultiple
         );
     }
 

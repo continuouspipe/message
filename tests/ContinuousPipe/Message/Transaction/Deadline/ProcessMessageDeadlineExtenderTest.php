@@ -41,6 +41,32 @@ class ProcessMessageDeadlineExtenderTest extends TestCase
         $this->shouldHaveTraced('test2', '.'."\n".'.');
     }
 
+    function test_it_allows_multiple_extenders_to_run_at_the_same_time_by_default()
+    {
+        $extender = $this->getExtender(null, 'test3');
+        $extender->extend();
+        $extender->extend();
+        $extender->extend();
+
+        sleep(2);
+
+        $this->shouldHaveTraced('test3', implode("\n", array_fill(0, 7, '.')));
+    }
+
+    function test_it_allows_to_force_unique_run_of_extender()
+    {
+        $extender = $this->getExtender(null, 'test4');
+        $extender->extend();
+        $extender->extend();
+
+        $extender = $this->getExtender(null, 'test4', false);
+        $extender->extend();
+
+        sleep(4);
+
+        $this->shouldHaveTraced('test4', implode("\n", array_fill(0, 5, '.')));
+    }
+
     private function shouldHaveTraced(string $traceName, string $expectedTrace)
     {
         $trace = trim(file_get_contents(__DIR__.'/fixtures/'.$traceName.'.trace'));
@@ -51,14 +77,14 @@ class ProcessMessageDeadlineExtenderTest extends TestCase
     /**
      * @return ProcessMessageDeadlineExtender
      */
-    private function getExtender(string $command = null, string $connectionName = null): ProcessMessageDeadlineExtender
+    private function getExtender(string $command = null, string $connectionName = null, bool $allowMultiple = true): ProcessMessageDeadlineExtender
     {
 
         $extender = new ProcessMessageDeadlineExtender(
             $command ?: __DIR__ . '/fixtures/loop.sh',
             $connectionName ?: 'connectionName',
-            new DummyPulledMessage(new DummyMessage(), 'message-123', 'ack-123', function () {
-            })
+            new DummyPulledMessage(new DummyMessage(), 'message-123', 'ack-123', function () {}),
+            $allowMultiple
         );
 
         return $extender;
