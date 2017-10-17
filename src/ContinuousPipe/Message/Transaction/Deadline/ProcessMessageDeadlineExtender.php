@@ -72,7 +72,7 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
 
     public function stop()
     {
-        $this->process->stop(10);
+        $this->forceKill($this->process->getPid());
     }
 
     private function getCommandPrefix() : string
@@ -82,14 +82,9 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
 
     private function stopExistingRunningExtenders(bool $throwException = false)
     {
-        $processList = new Process('ps aux | grep "'.$this->getCommandPrefix().'"');
-        $processList->run();
+        exec('ps aux | grep "'.$this->getCommandPrefix().'"', $output);
 
-        if (!$processList->isSuccessful()) {
-            throw new \RuntimeException('Could not get the running processes');
-        }
-
-        foreach (explode("\n", $processList->getOutput()) as $line) {
+        foreach ($output as $line) {
             $processes = preg_split('/\s+/', $line);
             if (count($processes) < 2) {
                 continue;
@@ -102,18 +97,13 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
                 continue;
             }
 
-            $signal = SIGKILL;
-            if (function_exists('posix_kill')) {
-                $ok = @posix_kill($processId, $signal);
-            } elseif ($ok = proc_open(sprintf('kill -%d %d', $signal, $processId), array(2 => array('pipe', 'w')), $pipes)) {
-                $ok = false === fgets($pipes[2]);
-            } else {
-                throw new \RuntimeException('To kill processes, your system need to have either `posix_kill` or `proc_open` functions');
-            }
-
-            if (!$ok && $throwException) {
-                throw new \RuntimeException('Something went wrong when trying to kill existing extender');
-            }
+            $this->forceKill($processId);
         }
+    }
+
+    private function forceKill($processId)
+    {
+        @exec(sprintf('pkill -9 -P %d', $processId), $output);
+        @exec(sprintf('kill -9 %d', $processId));
     }
 }

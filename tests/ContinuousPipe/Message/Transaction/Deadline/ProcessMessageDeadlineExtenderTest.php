@@ -24,6 +24,7 @@ class ProcessMessageDeadlineExtenderTest extends TestCase
         $extender->extend();
 
         sleep(1.5); // We wait a bit for the extend `usleep`
+
         $this->shouldHaveTraced('test1', '.'."\n".'.');
     }
 
