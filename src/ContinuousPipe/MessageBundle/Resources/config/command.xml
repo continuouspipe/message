@@ -35,6 +35,12 @@
             <argument /> <!-- Message Deadline Expiration Manager -->
             <argument type="service" id="continuouspipe.message.time_resolver"/>
         </service>
+        <service id="continuouspipe.message.command.transaction_manager.dispatch_events"
+                 class="ContinuousPipe\Message\Bridge\Symfony\DispatchEventsTransactionManager"
+                 decorates="continuouspipe.message.command.transaction_manager.default">
+            <argument type="service" id="continuouspipe.message.command.transaction_manager.dispatch_events.inner" />
+            <argument type="service" id="event_dispatcher" />
+        </service>
 
         <service id="continuouspipe.message.command.transaction_manager_factory.default" class="ContinuousPipe\Message\Transaction\DefaultTransactionManagerFactory">
             <argument type="service" id="continuouspipe.message.command.transaction_manager.default"/>
