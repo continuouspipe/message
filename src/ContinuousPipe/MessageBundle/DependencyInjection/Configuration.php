@@ -31,6 +31,12 @@ class Configuration implements ConfigurationInterface
                                     })
                                     ->thenInvalid('Only one driver should be configured')
                                 ->end()
+                                ->beforeNormalization()
+                                    ->ifString()
+                                    ->then(function($dsn) {
+                                        return self::parseDsn($dsn);
+                                    })
+                                ->end()
                                 ->children()
                                     ->scalarNode('direct')->end()
                                     ->arrayNode('google_pub_sub')
@@ -93,5 +99,39 @@ class Configuration implements ConfigurationInterface
         ;
 
         return $builder;
+    }
+
+    public static function parseDsn($dsn)
+    {
+        $url = parse_url($dsn);
+        $options = null;
+        if (isset($url['query'])) {
+            parse_str($url['query'], $options);
+        }
+
+        switch ($url['scheme']) {
+            case 'gps':
+                $driver = [
+                    'google_pub_sub' => [
+                        'project_id' => $url['user'],
+                        'service_account_path' => $url['pass'],
+                        'subscription' => $url['host'],
+                        'topic' => substr($url['path'], 1),
+                    ]
+                ];
+
+                if ($options) {
+                    $driver['google_pub_sub']['options'] = $options;
+                }
+
+                break;
+            default:
+                throw new \InvalidArgumentException(sprintf(
+                    'Type "%s" is not parsable',
+                    $url['scheme']
+                ));
+        }
+
+        return $driver;
     }
 }

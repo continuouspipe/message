@@ -14,6 +14,7 @@
     "require-dev": {
         "phpspec/phpspec": "^4.0",
         "jms/serializer": "^1.8",
-        "phpunit/phpunit": "^6.4"
+        "phpunit/phpunit": "^6.4",
+        "symfony/config": "^4.0"
     }
 }
