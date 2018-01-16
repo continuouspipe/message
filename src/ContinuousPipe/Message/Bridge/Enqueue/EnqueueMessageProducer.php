@@ -29,7 +29,7 @@ class EnqueueMessageProducer implements MessageProducer
     public function produce(Message $message)
     {
         $topic = $this->context->createTopic($this->topicName);
-        $topic->addFlag(AmqpTopic::TYPE_FANOUT);
+        $topic->setType(AmqpTopic::TYPE_FANOUT);
 
         $queue = $this->context->createQueue($this->queueName);
         $queue->addFlag(AmqpQueue::FLAG_DURABLE);
