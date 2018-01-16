@@ -2,12 +2,15 @@
 
 namespace ContinuousPipe\Message\Connection;
 
+use ContinuousPipe\Message\Bridge\Enqueue\EnqueueMessageProducer;
+use ContinuousPipe\Message\Bridge\Enqueue\EnqueueMessagePuller;
 use ContinuousPipe\Message\Direct\DelayedMessagesBuffer;
 use ContinuousPipe\Message\Direct\FromProducerToConsumer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller;
 use ContinuousPipe\Message\InMemory\ArrayMessagePuller;
 use ContinuousPipe\Message\MessageConsumer;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Google\Cloud\Core\ServiceBuilder;
 use JMS\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
@@ -44,6 +47,7 @@ class DsnConnectionFactory implements ConnectionFactory
         }
 
         $type = $parsedDsn['scheme'];
+        isset($parsedDsn['query']) ? parse_str($parsedDsn['query'], $queryOptions) : $queryOptions = [];
 
         // Example: direct://
         if ('direct' === $type) {
@@ -60,8 +64,6 @@ class DsnConnectionFactory implements ConnectionFactory
 
         // Example: 'gps://project_id:base64_encoded_service_account@subscription_name/topic?requestTimeout=60'
         if ('gps' === $type) {
-            isset($parsedDsn['query']) ? parse_str($parsedDsn['query'], $gpsOptions) : $gpsOptions = [];
-
             $projectId = $parsedDsn['user'];
             $serviceAccountFile = $this->temporaryServiceAccountFile($parsedDsn['pass']);
             $subscriptionName = $parsedDsn['host'];
@@ -75,7 +77,7 @@ class DsnConnectionFactory implements ConnectionFactory
                     $serviceAccountFile,
                     $topicName,
                     $subscriptionName,
-                    $gpsOptions
+                    $queryOptions
                 ),
                 new PubSubMessageProducer(
                     $this->serializer,
@@ -84,6 +86,33 @@ class DsnConnectionFactory implements ConnectionFactory
                         'keyFilePath' => $serviceAccountFile,
                     ]),
                     $topicName
+                )
+            );
+        }
+
+        // Example: amqp://guest:guest@localhost:5672/%2f?topic=messages&queue=messages
+        if ('amqp' === $type) {
+            $factory = new AmqpConnectionFactory($options['dsn']);
+            $context = $factory->createContext();
+
+            if (!isset($queryOptions['topic'])) {
+                throw new \InvalidArgumentException('The DSN should have the `topic` query option');
+            } elseif (!isset($queryOptions['queue'])) {
+                throw new \InvalidArgumentException('The DSN should have the `queue` query option');
+            }
+
+            return new Connection(
+                new EnqueueMessagePuller(
+                    $this->serializer,
+                    $this->logger,
+                    $context,
+                    $queryOptions['queue']
+                ),
+                new EnqueueMessageProducer(
+                    $this->serializer,
+                    $context,
+                    $queryOptions['topic'],
+                    $queryOptions['queue']
                 )
             );
         }
