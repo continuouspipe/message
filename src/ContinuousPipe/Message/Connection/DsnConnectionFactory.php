@@ -27,7 +27,7 @@ class DsnConnectionFactory implements ConnectionFactory
      *
      * @var string[]
      */
-    private $writtenTemporaryFiles;
+    private $writtenTemporaryFiles = [];
 
     public function __construct(MessageConsumer $messageConsumer, SerializerInterface $serializer, LoggerInterface $logger)
     {

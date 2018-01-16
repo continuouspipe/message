@@ -3,6 +3,7 @@
 namespace ContinuousPipe\Message\Bridge\Enqueue;
 
 use ContinuousPipe\Message\Command\ReceivedMessage;
+use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessagePuller;
 use Enqueue\AmqpExt\AmqpContext;
 use Interop\Amqp\AmqpQueue;
@@ -10,7 +11,7 @@ use JMS\Serializer\Exception\Exception as SerializerException;
 use JMS\Serializer\SerializerInterface;
 use Psr\Log\LoggerInterface;
 
-class EnqueueMessagePuller implements MessagePuller
+class EnqueueMessagePuller implements MessagePuller, MessageDeadlineExpirationManager
 {
     private $context;
     private $queueName;
@@ -57,5 +58,10 @@ class EnqueueMessagePuller implements MessagePuller
                 $consumer->reject($message);
             }
         }
+    }
+
+    public function modifyDeadline(string $acknowledgeIdentifier, int $seconds)
+    {
+        // Will not do anything.
     }
 }

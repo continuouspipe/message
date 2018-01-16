@@ -45,9 +45,10 @@ class MessageExtension extends Extension
             $loader->load('command.xml');
 
             if (isset($config['command']['message_deadline_expiration_manager'])) {
-                $container->getDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages')->replaceArgument(1, new Reference(
-                    $config['command']['message_deadline_expiration_manager']
-                ));
+                $container->getDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages')->replaceArgument(
+                    1,
+                    new Reference($config['command']['message_deadline_expiration_manager'])
+                );
             } else {
                 $container->removeDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages');
             }
