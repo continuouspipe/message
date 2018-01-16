@@ -45,7 +45,7 @@ class ModifyDeadlineForDelayedMessages implements TransactionManager
                     $shouldRunInSeconds
                 );
 
-                return null;
+                return;
             }
         }
 

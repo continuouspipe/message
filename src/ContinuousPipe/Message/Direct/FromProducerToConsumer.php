@@ -20,7 +20,7 @@ class FromProducerToConsumer implements MessageProducer
     private $serializer;
 
     /**
-     * @param MessageConsumer $messageConsumer
+     * @param MessageConsumer     $messageConsumer
      * @param SerializerInterface $serializer
      */
     public function __construct(MessageConsumer $messageConsumer, SerializerInterface $serializer)

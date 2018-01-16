@@ -27,28 +27,22 @@ class Configuration implements ConfigurationInterface
                                 ->performNoDeepMerging()
                                 ->validate()
                                     ->ifTrue(function ($values) {
-                                        return is_array($values) && count($values) !== 1;
+                                        return isset($values['router']) && isset($values['dsn']);
                                     })
-                                    ->thenInvalid('Only one driver should be configured')
+                                    ->thenInvalid('You can either configure the router or the driver DSN for a given connection.')
                                 ->end()
                                 ->beforeNormalization()
                                     ->ifString()
                                     ->then(function($dsn) {
-                                        return self::parseDsn($dsn);
+                                        return [
+                                            'dsn' => $dsn,
+                                        ];
                                     })
                                 ->end()
                                 ->children()
-                                    ->scalarNode('direct')->end()
-                                    ->arrayNode('google_pub_sub')
-                                        ->children()
-                                            ->scalarNode('project_id')->isRequired()->end()
-                                            ->scalarNode('service_account_path')->isRequired()->end()
-                                            ->scalarNode('topic')->isRequired()->end()
-                                            ->scalarNode('subscription')->isRequired()->end()
-                                            ->arrayNode('options')
-                                                ->prototype('scalar')->end()
-                                            ->end()
-                                        ->end()
+                                    ->scalarNode('dsn')->end()
+                                    ->arrayNode('options')
+                                        ->prototype('scalar')->end()
                                     ->end()
                                     ->arrayNode('router')
                                         ->children()
@@ -99,39 +93,5 @@ class Configuration implements ConfigurationInterface
         ;
 
         return $builder;
-    }
-
-    public static function parseDsn($dsn)
-    {
-        $url = parse_url($dsn);
-        $options = null;
-        if (isset($url['query'])) {
-            parse_str($url['query'], $options);
-        }
-
-        switch ($url['scheme']) {
-            case 'gps':
-                $driver = [
-                    'google_pub_sub' => [
-                        'project_id' => $url['user'],
-                        'service_account_path' => $url['pass'],
-                        'subscription' => $url['host'],
-                        'topic' => substr($url['path'], 1),
-                    ]
-                ];
-
-                if ($options) {
-                    $driver['google_pub_sub']['options'] = $options;
-                }
-
-                break;
-            default:
-                throw new \InvalidArgumentException(sprintf(
-                    'Type "%s" is not parsable',
-                    $url['scheme']
-                ));
-        }
-
-        return $driver;
     }
 }

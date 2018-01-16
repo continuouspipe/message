@@ -6,7 +6,7 @@ use ContinuousPipe\Message\Delay\DelayedMessage;
 use ContinuousPipe\Message\Message;
 use ContinuousPipe\Message\MessageProducer;
 use Google\Cloud\Core\Exception\GoogleException;
-use Google\Cloud\ServiceBuilder;
+use Google\Cloud\Core\ServiceBuilder;
 use JMS\Serializer\SerializerInterface;
 
 class PubSubMessageProducer implements MessageProducer
