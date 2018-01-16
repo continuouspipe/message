@@ -4,7 +4,8 @@ namespace ContinuousPipe\Message\Connection;
 
 use ContinuousPipe\Message\Bridge\Enqueue\EnqueueMessageProducer;
 use ContinuousPipe\Message\Bridge\Enqueue\EnqueueMessagePuller;
-use ContinuousPipe\Message\Direct\DelayedMessagesBuffer;
+use ContinuousPipe\Message\Delay\BufferizeDelayedMessages;
+use ContinuousPipe\Message\Delay\DelayedMessagesBuffer;
 use ContinuousPipe\Message\Direct\FromProducerToConsumer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller;
@@ -17,6 +18,7 @@ use Psr\Log\LoggerInterface;
 
 class DsnConnectionFactory implements ConnectionFactory
 {
+    private $delayedMessagesBuffer;
     private $messageConsumer;
     private $serializer;
     private $logger;
@@ -29,11 +31,12 @@ class DsnConnectionFactory implements ConnectionFactory
      */
     private $writtenTemporaryFiles = [];
 
-    public function __construct(MessageConsumer $messageConsumer, SerializerInterface $serializer, LoggerInterface $logger)
+    public function __construct(MessageConsumer $messageConsumer, SerializerInterface $serializer, LoggerInterface $logger, DelayedMessagesBuffer $delayedMessagesBuffer)
     {
         $this->messageConsumer = $messageConsumer;
         $this->serializer = $serializer;
         $this->logger = $logger;
+        $this->delayedMessagesBuffer = $delayedMessagesBuffer;
     }
 
     public function create(array $options) : Connection
@@ -53,11 +56,12 @@ class DsnConnectionFactory implements ConnectionFactory
         if ('direct' === $type) {
             return new Connection(
                 new ArrayMessagePuller(),
-                new DelayedMessagesBuffer(
+                new BufferizeDelayedMessages(
                     new FromProducerToConsumer(
                         $this->messageConsumer,
                         $this->serializer
-                    )
+                    ),
+                    $this->delayedMessagesBuffer
                 )
             );
         }

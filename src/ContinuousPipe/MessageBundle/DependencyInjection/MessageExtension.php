@@ -5,7 +5,6 @@ namespace ContinuousPipe\MessageBundle\DependencyInjection;
 use ContinuousPipe\Message\AutoRetry\CatchGivenExceptions;
 use ContinuousPipe\Message\Connection\Connection;
 use ContinuousPipe\Message\Debug\TracedMessageProducer;
-use ContinuousPipe\Message\Direct\DelayedMessagesBuffer;
 use ContinuousPipe\Message\Direct\FromProducerToConsumer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessageProducer;
 use ContinuousPipe\Message\GooglePubSub\PubSubMessagePuller;
