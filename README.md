@@ -16,13 +16,8 @@ message:
 
     connections:
         default:
-            driver:
-                google_pub_sub:
-                    project_id: %google_pub_sub_project_id%
-                    service_account_path: %google_pub_sub_key_file_path%
-                    topic: %google_pub_sub_topic%
-                    subscription: %google_pub_sub_subscription_name%
-            debug: false
+            driver: 'gps://google_project_id:base64_encoded_servie_account@subscription_name/topic_name'
+            debug: true
             
     tideways:
         api_key: %tideways_api_key%
