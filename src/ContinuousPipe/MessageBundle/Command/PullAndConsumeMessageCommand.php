@@ -2,16 +2,16 @@
 
 namespace ContinuousPipe\MessageBundle\Command;
 
+use ContinuousPipe\Message\Connection\ConnectionRegistry;
 use ContinuousPipe\Message\MessageConsumer;
 use ContinuousPipe\Message\MessagePuller;
-use ContinuousPipe\Message\MessagePullerRegistry;
 use ContinuousPipe\Message\PulledMessage;
+use ContinuousPipe\Message\Signal\SignalHandler;
 use ContinuousPipe\Message\Transaction\TransactionManager;
 use ContinuousPipe\Message\Transaction\TransactionManagerFactory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Psr\Log\LoggerInterface;
-use Seld\Signal\SignalHandler;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,39 +28,14 @@ class PullAndConsumeMessageCommand extends Command
      */
     const MAX_RUNTIME_IN_SECS = 1800;
 
-    /**
-     * @var MessagePullerRegistry
-     */
-    private $messagePullerRegistry;
-
-    /**
-     * @var MessageConsumer
-     */
+    private $connectionRegistry;
     private $messageConsumer;
-
-    /**
-     * @var TransactionManagerFactory
-     */
     private $transactionManagerFactory;
-
-    /**
-     * @var LoggerInterface
-     */
     private $logger;
-    /**
-     * @var null|string
-     */
     private $connectionName;
 
-    /**
-     * @param MessagePullerRegistry $messagePullerRegistry
-     * @param MessageConsumer $messageConsumer
-     * @param TransactionManagerFactory $transactionManagerFactory
-     * @param LoggerInterface $logger
-     * @param string|null $connectionName
-     */
     public function __construct(
-        MessagePullerRegistry $messagePullerRegistry,
+        ConnectionRegistry $connectionRegistry,
         MessageConsumer $messageConsumer,
         TransactionManagerFactory $transactionManagerFactory,
         LoggerInterface $logger,
@@ -68,7 +43,7 @@ class PullAndConsumeMessageCommand extends Command
     ) {
         parent::__construct('continuouspipe:message:pull-and-consume');
 
-        $this->messagePullerRegistry = $messagePullerRegistry;
+        $this->connectionRegistry = $connectionRegistry;
         $this->messageConsumer = $messageConsumer;
         $this->transactionManagerFactory = $transactionManagerFactory;
         $this->logger = $logger;
@@ -106,7 +81,7 @@ class PullAndConsumeMessageCommand extends Command
             throw new \InvalidArgumentException('No default connection configured. Please use the `--connection` argument to specify the connection to use');
         }
 
-        $puller = $this->messagePullerRegistry->pullerForConnection($connectionName);
+        $puller = $this->connectionRegistry->byName($connectionName)->getPuller();
 
         foreach ($puller->pull() as $pulledMessage) {
             $this->transactionManagerFactory->forMessage($pulledMessage)->run($pulledMessage, function (PulledMessage $pulledMessage) use ($output) {

@@ -45,7 +45,7 @@
         <service id="continuouspipe.message.command.transaction_manager_factory.default" class="ContinuousPipe\Message\Transaction\DefaultTransactionManagerFactory">
             <argument type="service" id="continuouspipe.message.command.transaction_manager.default"/>
         </service>
-        <service id="continuouspipe.message.puller_registry" class="ContinuousPipe\Message\MessagePullerRegistry">
+        <service id="continuouspipe.message.connection_registry" class="ContinuousPipe\Message\Connection\ConnectionRegistry">
             <argument type="service" id="service_container" />
         </service>
 
@@ -53,10 +53,16 @@
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" class="ContinuousPipe\Message\AutoRetry\CatchDoctrineDriverException" />
         <service id="continuouspipe.message.command.pull_and_consumer.throwable_catcher" alias="continuouspipe.message.command.pull_and_consumer.throwable_catcher.doctrine" />
         <service id="continuouspipe.message.command.pull_and_consumer" class="ContinuousPipe\MessageBundle\Command\PullAndConsumeMessageCommand">
-            <argument /> <!-- Message puller or message puller registry-->
+            <argument type="service" id="continuouspipe.message.connection_registry" />
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.transaction_manager_factory.default" />
             <argument type="service" id="logger" />
+
+            <tag name="console.command" />
+        </service>
+
+        <service id="continuouspipe.message.command.push" class="ContinuousPipe\MessageBundle\Command\PushMessageCommand">
+            <argument type="service" id="continuouspipe.message.connection_registry" />
 
             <tag name="console.command" />
         </service>
@@ -65,6 +71,12 @@
             <argument type="service" id="continuouspipe.message.message_consumer" />
             <argument type="service" id="continuouspipe.message.command.transaction_manager_factory.default" />
             <argument type="service" id="jms_serializer" />
+
+            <tag name="console.command" />
+        </service>
+
+        <service id="continuouspipe.message.command.extend_message_deadline" class="ContinuousPipe\MessageBundle\Command\ExtendMessageDeadlineCommand">
+            <argument type="service" id="continuouspipe.message.connection_registry" />
 
             <tag name="console.command" />
         </service>

@@ -43,8 +43,7 @@ class EnqueueMessageProducer implements MessageProducer
         }
 
         $amqpMessage = $this->context->createMessage(
-            $this->serializer->serialize($message),
-            [],
+            $this->serializer->serialize($message, 'json'),
             ['class' => get_class($message)]
         );
 

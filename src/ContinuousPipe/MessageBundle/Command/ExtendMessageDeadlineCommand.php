@@ -2,10 +2,10 @@
 
 namespace ContinuousPipe\MessageBundle\Command;
 
+use ContinuousPipe\Message\Connection\ConnectionRegistry;
 use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessagePuller;
-use ContinuousPipe\Message\MessagePullerRegistry;
-use Seld\Signal\SignalHandler;
+use ContinuousPipe\Message\Signal\SignalHandler;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,16 +13,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ExtendMessageDeadlineCommand extends ContainerAwareCommand
 {
-    /**
-     * @var MessagePullerRegistry
-     */
-    private $messagePullerRegistry;
+    private $connectionRegistry;
 
-    public function __construct(MessagePullerRegistry $messagePullerRegistry)
+    public function __construct(ConnectionRegistry $connectionRegistry)
     {
         parent::__construct('continuouspipe:message:extend-deadline');
 
-        $this->messagePullerRegistry = $messagePullerRegistry;
+        $this->connectionRegistry = $connectionRegistry;
     }
 
     public function configure()
@@ -35,7 +32,7 @@ class ExtendMessageDeadlineCommand extends ContainerAwareCommand
 
     public function run(InputInterface $input, OutputInterface $output)
     {
-        $puller = $this->messagePullerRegistry->pullerForConnection($connectionName = $input->getArgument('connection'));
+        $puller = $this->connectionRegistry->byName($connectionName = $input->getArgument('connection'))->getPuller();
         if (!$puller instanceof MessageDeadlineExpirationManager) {
             throw new \RuntimeException(sprintf('Puller of connection "%s" do not supports expiration management', $connectionName));
         }

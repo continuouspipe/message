@@ -5,6 +5,7 @@ namespace ContinuousPipe\Message\Bridge\Enqueue;
 use ContinuousPipe\Message\Command\ReceivedMessage;
 use ContinuousPipe\Message\MessageDeadlineExpirationManager;
 use ContinuousPipe\Message\MessagePuller;
+use ContinuousPipe\Message\Signal\SignalHandler;
 use Enqueue\AmqpExt\AmqpContext;
 use Interop\Amqp\AmqpQueue;
 use JMS\Serializer\Exception\Exception as SerializerException;
@@ -34,28 +35,29 @@ class EnqueueMessagePuller implements MessagePuller, MessageDeadlineExpirationMa
         $this->context->declareQueue($queue);
 
         $consumer = $this->context->createConsumer($queue);
+        $signal = SignalHandler::create([SIGINT, SIGTERM]);
 
-        while (true) {
-            if (null === ($message = $consumer->receive(60))) {
+        while (!$signal->isTriggered()) {
+            if (null === ($amqpMessage = $consumer->receive(60))) {
                 continue;
             }
 
             try {
                 $message = $this->serializer->deserialize(
-                    $message->getBody(),
-                    $message->getHeader('class'),
+                    $amqpMessage->getBody(),
+                    $amqpMessage->getProperty('class'),
                     'json'
                 );
 
                 yield new ReceivedMessage($message);
 
-                $consumer->acknowledge($message);
+                $consumer->acknowledge($amqpMessage);
             } catch (SerializerException $e) {
                 $this->logger->warning('Message rejected because not been able to deserialize it.', [
                     'exception' => $e,
                 ]);
 
-                $consumer->reject($message);
+                $consumer->reject($amqpMessage);
             }
         }
     }

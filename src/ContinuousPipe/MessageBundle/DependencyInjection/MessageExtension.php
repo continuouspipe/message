@@ -53,17 +53,6 @@ class MessageExtension extends Extension
                 $container->removeDefinition('continuouspipe.message.command.transaction_manager.modify_deadline_for_delayed_messages');
             }
 
-            if (isset($config['command']['connection'])) {
-                $commandPuller = new Reference('continuouspipe.message.' . $config['command']['connection'] . '.message_puller');
-            } else {
-                $commandPuller = new Reference('continuouspipe.message.puller_registry');
-            }
-
-            $container
-                ->getDefinition('continuouspipe.message.command.pull_and_consumer')
-                ->replaceArgument(0, $commandPuller)
-            ;
-
             $container
                 ->getDefinition('continuouspipe.message.command.transaction_manager.message_extender_factory')
                 ->setArgument(1, $config['command']['allow_multiple_extenders'])
@@ -84,7 +73,6 @@ class MessageExtension extends Extension
         }
 
         $loader->load('services.xml');
-        $loader->load('drivers/google_pub_sub.xml');
 
         if ($config['tideways']['enabled']) {
             $container->setParameter('continuous_pipe.message.tideways_api_key', $config['tideways']['api_key']);
