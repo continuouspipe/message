@@ -72,7 +72,9 @@ class ProcessMessageDeadlineExtender implements MessageDeadlineExtender
 
     public function stop()
     {
-        $this->forceKill($this->process->getPid());
+        if (null !== ($pid = $this->process->getPid())) {
+            $this->forceKill($pid);
+        }
     }
 
     private function getCommandPrefix() : string
